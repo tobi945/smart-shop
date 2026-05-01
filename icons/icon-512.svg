@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="106" fill="#2E7D32"/>
+  <g stroke="white" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="26">
+    <!-- handle -->
+    <line x1="74" y1="154" x2="148" y2="154"/>
+    <!-- basket -->
+    <polyline points="148,154 192,310 340,310 384,192 166,192"/>
+  </g>
+  <!-- wheels -->
+  <circle cx="218" cy="352" r="29" fill="white"/>
+  <circle cx="314" cy="352" r="29" fill="white"/>
+</svg>
