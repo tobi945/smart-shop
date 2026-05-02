@@ -14,25 +14,39 @@
   <title>Smart Shop</title>
 </head>
 <body>
+
+  <!-- ── כותרת ─────────────────────────────────────── -->
   <header class="app-header">
     <div class="header-main">
       <div>
         <p class="eyebrow">רשימת קניות אישית</p>
         <h1>Smart Shop</h1>
       </div>
-      <button class="icon-button" id="openProductModal" type="button" aria-label="הוסף מוצר">
-        <span aria-hidden="true">+</span>
-      </button>
+      <div class="header-actions">
+        <!-- כפתור מצב סופר -->
+        <button class="focus-toggle-btn" id="focusModeBtn" type="button" aria-label="מצב סופר" title="מצב סופר">
+          🛒
+        </button>
+        <!-- כפתור הוסף מוצר -->
+        <button class="icon-button" id="openProductModal" type="button" aria-label="הוסף מוצר">
+          <span aria-hidden="true">+</span>
+        </button>
+      </div>
     </div>
 
+    <!-- רצועת סיכום (נראית רק כשיש פריטים) -->
     <div class="summary-strip" id="summaryStrip" hidden>
       <span id="summaryTotal">0 מוצרים</span>
       <span id="summaryBought">0 נקנו</span>
       <span id="summaryLeft">0 חסרים</span>
+      <span id="summaryBudget" class="budget-cell"></span>
     </div>
   </header>
 
+  <!-- ── תוכן ראשי ──────────────────────────────────── -->
   <main class="app-shell">
+
+    <!-- מצב ריק -->
     <section class="empty-state" id="emptyState">
       <div class="empty-icon" aria-hidden="true">🛒</div>
       <h2>הרשימה ריקה</h2>
@@ -40,14 +54,19 @@
       <button class="primary-button" id="emptyAddButton" type="button">הוסף מוצר</button>
     </section>
 
+    <!-- רשימת הקטגוריות -->
     <section class="categories" id="categoriesContainer" aria-live="polite"></section>
+
   </main>
 
-  <button class="whatsapp-fab" id="shareWhatsAppButton" type="button" aria-label="שתף רשימת קניות בוואטסאפ" hidden>
+  <!-- ── כפתור WhatsApp צף ─────────────────────────── -->
+  <button class="whatsapp-fab" id="shareWhatsAppButton" type="button"
+          aria-label="שתף רשימת קניות בוואטסאפ" hidden>
     <span aria-hidden="true">↗</span>
     <span>שלח לוואטסאפ</span>
   </button>
 
+  <!-- ── מודאל: הוספת מוצר ──────────────────────────── -->
   <div class="modal-overlay" id="productModal" role="presentation" hidden>
     <section class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <div class="modal-handle" aria-hidden="true"></div>
@@ -57,20 +76,56 @@
       </header>
 
       <form class="product-form" id="productForm">
+
+        <!-- שם (עם השלמה אוטומטית) -->
         <label class="field">
           <span>שם המוצר</span>
-          <input id="productName" name="name" type="text" autocomplete="off" placeholder="לדוגמה: חלב, לחם, עגבניות" required>
+          <input id="productName" name="name" type="text" autocomplete="off"
+                 list="nameHistory" placeholder="לדוגמה: חלב, לחם, עגבניות" required>
+          <datalist id="nameHistory"></datalist>
         </label>
 
+        <!-- קטגוריה -->
         <label class="field">
           <span>קטגוריה</span>
           <select id="productCategory" name="category" required></select>
         </label>
 
-        <label class="field">
-          <span>כמות</span>
-          <input id="productQuantity" name="quantity" type="number" min="1" step="1" value="1" inputmode="numeric" required>
-        </label>
+        <!-- כמות + יחידה (שורה אחת) -->
+        <div class="field-row">
+          <label class="field">
+            <span>כמות</span>
+            <input id="productQuantity" name="quantity" type="number"
+                   min="1" step="1" value="1" inputmode="numeric" required>
+          </label>
+          <label class="field">
+            <span>יחידה</span>
+            <select id="productUnit" name="unit">
+              <option value="">--</option>
+              <option value='ק"ג'>ק"ג</option>
+              <option value="גרם">גרם</option>
+              <option value="ליטר">ליטר</option>
+              <option value='מ"ל'>מ"ל</option>
+              <option value="יח׳">יח׳</option>
+              <option value="חבילה">חבילה</option>
+            </select>
+          </label>
+        </div>
+
+        <!-- מחיר + עדיפות (שורה אחת) -->
+        <div class="field-row">
+          <label class="field">
+            <span>מחיר משוער (₪)</span>
+            <input id="productPrice" name="price" type="number"
+                   min="0" step="0.5" placeholder="אופציונלי" inputmode="decimal">
+          </label>
+          <div class="field priority-field">
+            <span>עדיפות</span>
+            <button type="button" id="priorityToggle" class="priority-btn" data-priority="0">
+              ☆ רגיל
+            </button>
+          </div>
+        </div>
 
         <footer class="form-actions">
           <button class="secondary-button" id="cancelProductButton" type="button">ביטול</button>

@@ -459,3 +459,150 @@ h1 {
     right: calc(50% - 344px);
   }
 }
+
+/* ================================================================
+   פרק 2: Shopping Engine — סגנונות חדשים
+   ================================================================ */
+
+/* ── כותרת: כפתורי פעולה ──────────────────────────────────────── */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ── כפתור מצב סופר ───────────────────────────────────────────── */
+.focus-toggle-btn {
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  border: 2px solid rgba(255,255,255,0.35);
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  font-size: 1.35rem;
+  transition: background 0.18s, border-color 0.18s;
+}
+
+.focus-toggle-btn.focus-active {
+  background: rgba(255,255,255,0.9);
+  border-color: rgba(255,255,255,0.9);
+}
+
+/* ── תקציב ברצועת הסיכום ──────────────────────────────────────── */
+.summary-strip {
+  grid-template-columns: repeat(4, 1fr); /* override: 3 → 4 */
+}
+
+.budget-cell {
+  font-weight: 800;
+  color: var(--accent);
+}
+
+/* ── שדה-שורה (כמות+יחידה / מחיר+עדיפות) ───────────────────── */
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* ── כפתור עדיפות ─────────────────────────────────────────────── */
+.priority-field {
+  display: grid;
+  gap: 7px;
+}
+
+.priority-btn {
+  min-height: 52px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fbfcfb;
+  color: var(--muted);
+  font-size: 0.95rem;
+  font-weight: 800;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.priority-btn[data-priority="1"] {
+  background: #fffbea;
+  border-color: var(--accent);
+  color: #9a6000;
+}
+
+/* ── כוכב עדיפות בפריט ───────────────────────────────────────── */
+.priority-star {
+  font-size: 0.9em;
+  margin-left: 4px;
+}
+
+/* ── פריט בעדיפות גבוהה ──────────────────────────────────────── */
+.product-item.is-priority {
+  background: #fffdf5;
+}
+
+/* ── תג מחיר ──────────────────────────────────────────────────── */
+.price-tag {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #e6f4ec;
+  color: var(--primary-strong);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.product-item.is-bought .price-tag {
+  background: #eee;
+  color: #aaa;
+}
+
+/* ================================================================
+   מצב סופר (Focus Mode)
+   ================================================================ */
+
+/* כרזת מצב סופר */
+body.focus-mode::before {
+  content: '🛒 מצב סופר פעיל';
+  display: block;
+  text-align: center;
+  padding: 7px;
+  background: var(--accent);
+  color: #3d2600;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+/* פריטים גדולים יותר */
+body.focus-mode .product-item {
+  min-height: 76px;
+}
+
+/* צ'קבוקס גדול יותר */
+body.focus-mode .product-checkbox {
+  width: 30px;
+  height: 30px;
+}
+
+/* שם מוצר גדול יותר */
+body.focus-mode .product-name {
+  font-size: 1.12rem;
+}
+
+/* הסתרת כפתורי מחיקה (מניעת לחיצה בטעות בסופר) */
+body.focus-mode .delete-button {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* הדגשת פריטים שנרכשו */
+body.focus-mode .product-item.is-bought {
+  opacity: 0.55;
+}
+
+/* FAB בולט יותר */
+body.focus-mode .whatsapp-fab {
+  min-height: 66px;
+  font-size: 1.05rem;
+}
