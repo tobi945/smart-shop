@@ -841,3 +841,235 @@ body.focus-mode .whatsapp-fab {
     background: var(--primary-strong);
   }
 }
+
+/* ================================================================
+   פרק 4: Magic Link · QR Code · WhatsApp Text Import
+   ================================================================ */
+
+/* ── כפתור שתף בכותרת ────────────────────────────────────────── */
+.share-icon-btn {
+  font-size: 1.35rem;
+}
+
+/* ── גלילה במודאל שיתוף ──────────────────────────────────────── */
+.share-modal-sheet {
+  max-height: 92dvh;
+  overflow-y: auto;
+}
+
+/* ── לשוניות (Tabs) ──────────────────────────────────────────── */
+.share-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--line);
+}
+
+.share-tab {
+  padding: 12px 8px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 800;
+  transition: color 0.18s, border-color 0.18s;
+}
+
+.share-tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+/* ── פאנל לשונית ──────────────────────────────────────────────── */
+.share-panel {
+  display: grid;
+  gap: 14px;
+  padding: 16px 18px 22px;
+}
+
+/* ── תיבת קישור ───────────────────────────────────────────────── */
+.link-box {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.link-input {
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0 12px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-family: monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  outline: none;
+}
+
+.copy-btn {
+  min-height: 48px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+  color: var(--text);
+  font-weight: 800;
+  font-size: 0.88rem;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.copy-btn:active { background: #d4edda; }
+
+/* ── כפתורי פעולה שיתוף ───────────────────────────────────────── */
+.share-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* ── אזור QR ──────────────────────────────────────────────────── */
+.qr-container {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+  background: #fff;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+}
+
+.qr-container svg {
+  width: 100%;
+  height: auto;
+  max-width: 220px;
+  display: block;
+}
+
+.qr-error {
+  color: var(--muted);
+  font-size: 0.88rem;
+  text-align: center;
+  margin: 0;
+}
+
+/* ── טקסטריה ייבוא ────────────────────────────────────────────── */
+.import-textarea {
+  width: 100%;
+  min-height: 120px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px;
+  background: #fbfcfb;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+  direction: rtl;
+}
+
+.import-textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(31, 122, 77, 0.14);
+}
+
+.import-hint {
+  color: var(--muted);
+  font-size: 0.82rem;
+  margin: -6px 0 0;
+}
+
+/* ── תצוגה מקדימה ייבוא ──────────────────────────────────────── */
+.import-preview {
+  background: var(--surface-soft);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+
+.preview-label {
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.preview-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.preview-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--line);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.import-go-btn { width: 100%; }
+
+/* ── כרזת קישור נכנס ─────────────────────────────────────────── */
+.incoming-banner {
+  position: fixed;
+  bottom: 90px;
+  left: 16px;
+  right: 16px;
+  z-index: 45;
+  background: var(--primary-strong);
+  color: #fff;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 14px 16px;
+  animation: slideUpIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes slideUpIn {
+  from { transform: translateY(24px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.incoming-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.incoming-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.primary-button.small,
+.secondary-button.small {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 0.88rem;
+}
+
+.secondary-button.small {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+/* Dark mode — Chapter 4 additions */
+@media (prefers-color-scheme: dark) {
+  .link-input     { background: #1a2420; color: var(--muted); }
+  .copy-btn       { background: #1f2d28; color: var(--text);  }
+  .import-textarea { background: #1f2d28; color: var(--text);  }
+  .qr-container   { background: #fff; }   /* QR must be on white */
+  .preview-chip   { background: #1f2d28; border-color: var(--line); }
+  .copy-btn:active { background: #1c3327; }
+}

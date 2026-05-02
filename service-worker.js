@@ -1,4 +1,4 @@
-const CACHE_NAME = 'smart-shop-v3';
+const CACHE_NAME = 'smart-shop-v4';
 const APP_ASSETS = [
   './',
   './index.html',

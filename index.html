@@ -27,6 +27,10 @@
         <button class="focus-toggle-btn" id="focusModeBtn" type="button" aria-label="מצב סופר" title="מצב סופר">
           🛒
         </button>
+        <!-- כפתור שתף/יבא -->
+        <button class="icon-button share-icon-btn" id="openShareModal" type="button" aria-label="שתף ויבא">
+          <span aria-hidden="true">⬆</span>
+        </button>
         <!-- כפתור הוסף מוצר -->
         <button class="icon-button" id="openProductModal" type="button" aria-label="הוסף מוצר">
           <span aria-hidden="true">+</span>
@@ -135,12 +139,65 @@
     </section>
   </div>
 
+  <!-- ── מודאל: שיתוף ויבוא ─────────────────────────────── -->
+  <div class="modal-overlay" id="shareModal" role="presentation" hidden>
+    <section class="modal-sheet share-modal-sheet" role="dialog" aria-modal="true" aria-labelledby="shareModalTitle">
+      <div class="modal-handle" aria-hidden="true"></div>
+      <header class="modal-header">
+        <h2 id="shareModalTitle">שיתוף ויבוא</h2>
+        <button class="close-button" id="closeShareModal" type="button" aria-label="סגור">×</button>
+      </header>
+
+      <div class="share-tabs" role="tablist">
+        <button class="share-tab active" data-panel="panelExport" role="tab" type="button">📤 שתף קישור</button>
+        <button class="share-tab" data-panel="panelImport" role="tab" type="button">📥 יבא מטקסט</button>
+      </div>
+
+      <!-- Export panel -->
+      <div class="share-panel" id="panelExport">
+        <div class="link-box">
+          <input class="link-input" id="magicLinkInput" type="text" readonly aria-label="קישור שיתוף">
+          <button class="copy-btn" id="copyLinkBtn" type="button">📋 העתק</button>
+        </div>
+        <div class="share-actions">
+          <button class="primary-button" id="shareViaWhatsApp" type="button">↗ שלח בוואטסאפ</button>
+          <button class="secondary-button" id="toggleQrBtn" type="button">📷 הצג QR</button>
+        </div>
+        <div id="qrContainer" class="qr-container" hidden></div>
+      </div>
+
+      <!-- Import panel -->
+      <div class="share-panel" id="panelImport" hidden>
+        <label class="field">
+          <span>הדבק טקסט מוואטסאפ</span>
+          <textarea id="importTextarea" class="import-textarea"
+                    placeholder="לדוגמה:&#10;חלב 2&#10;ביצים&#10;לחם 3, גבינה 1" rows="5"></textarea>
+        </label>
+        <p class="import-hint">כל שורה או פסיק = מוצר אחד. הוסף מספר אחרי השם לכמות.</p>
+        <div id="importPreview" class="import-preview" hidden></div>
+        <button class="primary-button import-go-btn" id="importFromTextBtn" type="button">📥 יבא מוצרים</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- ── כרזת קישור נכנס ──────────────────────────────────── -->
+  <div class="incoming-banner" id="incomingBanner" hidden>
+    <div class="incoming-inner">
+      <span>📥 <strong>קיבלת רשימת קניות!</strong><span id="incomingCount"></span></span>
+      <div class="incoming-actions">
+        <button class="primary-button small" id="incomingAcceptBtn" type="button">✅ יבא</button>
+        <button class="secondary-button small" id="incomingDenyBtn" type="button">✕ דחה</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Toast: ביטול מחיקה ────────────────────────────── -->
   <div class="undo-toast" id="undoToast" hidden>
     <span id="undoMessage">נמחק</span>
     <button id="undoBtn" type="button">↩ בטל</button>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
   <script src="app.js" defer></script>
 </body>
 </html>

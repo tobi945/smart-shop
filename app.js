@@ -47,6 +47,7 @@ class AppManager {
     this._lastAllBought      = false;
     this.wakeLock            = null;
     this._swipeTouch         = null;   // { item, inner, startX, startY, lastX, tracking }
+    this._pendingImport      = null;   // products decoded from incoming magic link
 
     this.cacheDom();
     this.loadData();
@@ -54,6 +55,7 @@ class AppManager {
     this.populateCategories();
     this.bindEvents();
     this.render();
+    this.checkIncomingLink();
     this.registerServiceWorker();
   }
 
@@ -82,6 +84,16 @@ class AppManager {
       undoToast:      document.getElementById('undoToast'),
       undoMessage:    document.getElementById('undoMessage'),
       undoBtn:        document.getElementById('undoBtn'),
+      // Chapter 4
+      shareModal:     document.getElementById('shareModal'),
+      magicLinkInput: document.getElementById('magicLinkInput'),
+      copyLinkBtn:    document.getElementById('copyLinkBtn'),
+      toggleQrBtn:    document.getElementById('toggleQrBtn'),
+      qrContainer:    document.getElementById('qrContainer'),
+      importTextarea: document.getElementById('importTextarea'),
+      importPreview:  document.getElementById('importPreview'),
+      incomingBanner: document.getElementById('incomingBanner'),
+      incomingCount:  document.getElementById('incomingCount'),
     };
   }
 
@@ -369,6 +381,7 @@ class AppManager {
     // החלפת כפתור ה"בטל" כדי להסיר listener ישן
     const oldBtn = this.els.undoBtn;
     const newBtn = oldBtn.cloneNode(true);
+    newBtn.hidden = false;
     oldBtn.replaceWith(newBtn);
     this.els.undoBtn = newBtn;
 
@@ -387,7 +400,20 @@ class AppManager {
 
   hideUndoToast() {
     this.els.undoToast.classList.remove('visible');
-    setTimeout(() => { this.els.undoToast.hidden = true; }, 320);
+    setTimeout(() => {
+      this.els.undoToast.hidden = true;
+      this.els.undoBtn.hidden   = false;
+    }, 320);
+  }
+
+  /** Toast ללא כפתור ביטול (אינפורמציה בלבד) */
+  showToast(message) {
+    this.els.undoMessage.textContent = message;
+    this.els.undoBtn.hidden          = true;
+    this.els.undoToast.hidden        = false;
+    requestAnimationFrame(() => this.els.undoToast.classList.add('visible'));
+    clearTimeout(this._undoTimer);
+    this._undoTimer = setTimeout(() => this.hideUndoToast(), 2400);
   }
 
   // ── Vibration API ─────────────────────────────────────────────────
@@ -570,7 +596,9 @@ class AppManager {
     this.els.shareButton.addEventListener('click', () => this.openWhatsAppShare());
 
     document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && !this.els.modal.hidden) this.closeModal();
+      if (e.key !== 'Escape') return;
+      if (!this.els.modal.hidden)       this.closeModal();
+      else if (!this.els.shareModal.hidden) this.closeShareModal();
     });
 
     // Re-request Wake Lock if page becomes visible again
@@ -579,6 +607,23 @@ class AppManager {
         this.requestWakeLock();
       }
     });
+
+    // ── Chapter 4: Share modal ────────────────────────────────────
+    document.getElementById('openShareModal').addEventListener('click',  () => this.openShareModal());
+    document.getElementById('closeShareModal').addEventListener('click', () => this.closeShareModal());
+    this.els.shareModal.addEventListener('click', e => {
+      if (e.target === this.els.shareModal) this.closeShareModal();
+    });
+    this.els.shareModal.querySelectorAll('.share-tab').forEach(tab =>
+      tab.addEventListener('click', () => this.switchShareTab(tab))
+    );
+    this.els.copyLinkBtn.addEventListener('click',                             () => this.handleCopyLink());
+    document.getElementById('toggleQrBtn').addEventListener('click',          () => this.handleToggleQR());
+    document.getElementById('shareViaWhatsApp').addEventListener('click',     () => this.handleShareViaWhatsApp());
+    this.els.importTextarea.addEventListener('input',                         () => this.updateImportPreview());
+    document.getElementById('importFromTextBtn').addEventListener('click',    () => this.handleImportFromText());
+    document.getElementById('incomingAcceptBtn').addEventListener('click',    () => this.acceptIncomingLink());
+    document.getElementById('incomingDenyBtn').addEventListener('click',      () => this.dismissIncomingBanner());
   }
 
   // ── Modal ─────────────────────────────────────────────────────────
@@ -624,6 +669,216 @@ class AppManager {
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;')
       .replaceAll('>', '&gt;').replaceAll('"', '&quot;')
       .replaceAll("'", '&#039;');
+  }
+
+  // ── Chapter 4: Magic Link ─────────────────────────────────────
+
+  encodeMagicLink() {
+    // Compact: [name, category, quantity, unit, price, priority]
+    const compact = this.products.map(p =>
+      [p.name, p.category, p.quantity, p.unit, p.price, p.priority]
+    );
+    const json = JSON.stringify(compact);
+    const b64  = btoa(unescape(encodeURIComponent(json)));
+    return `${location.origin}${location.pathname}?data=${encodeURIComponent(b64)}`;
+  }
+
+  decodeMagicLink(raw) {
+    const json = decodeURIComponent(escape(atob(decodeURIComponent(raw))));
+    const arr  = JSON.parse(json);
+    if (!Array.isArray(arr)) throw new Error('invalid');
+    return arr.map(([name, category, quantity, unit, price, priority]) =>
+      new Product(
+        this.createId(), String(name || ''), String(category || 'other'),
+        Number(quantity) || 1, false,
+        Number(price) || 0, Number(priority) || 0, String(unit || '')
+      )
+    );
+  }
+
+  checkIncomingLink() {
+    const params  = new URLSearchParams(location.search);
+    const encoded = params.get('data');
+    if (!encoded) return;
+    // Remove query string from URL bar immediately
+    history.replaceState({}, '', location.pathname + location.hash);
+    try {
+      const products = this.decodeMagicLink(encoded);
+      if (products.length === 0) return;
+      this._pendingImport = products;
+      this.els.incomingCount.textContent = ` — ${products.length} מוצרים`;
+      this.els.incomingBanner.hidden = false;
+    } catch { /* ignore malformed */ }
+  }
+
+  acceptIncomingLink() {
+    if (!this._pendingImport) return;
+    const count = this._pendingImport.length;
+    this._pendingImport.forEach(p => {
+      this.products.push(p);
+      this.addToHistory(p.name);
+    });
+    this._pendingImport = null;
+    this.els.incomingBanner.hidden = true;
+    this.saveData();
+    this.render();
+    this.vibrate([80, 40, 80]);
+    this.showToast(`✅ יובאו ${count} מוצרים`);
+  }
+
+  dismissIncomingBanner() {
+    this._pendingImport = null;
+    this.els.incomingBanner.hidden = true;
+  }
+
+  // ── Chapter 4: Share Modal ────────────────────────────────────
+
+  openShareModal() {
+    this.els.magicLinkInput.value    = this.encodeMagicLink();
+    this.els.qrContainer.hidden      = true;
+    this.els.qrContainer.innerHTML   = '';
+    this.els.toggleQrBtn.textContent = '📷 הצג QR';
+    this.els.importTextarea.value    = '';
+    this.els.importPreview.hidden    = true;
+    // Reset to Export tab
+    this.switchShareTab(
+      this.els.shareModal.querySelector('[data-panel="panelExport"]')
+    );
+    this.els.shareModal.hidden   = false;
+    document.body.style.overflow = 'hidden';
+  }
+
+  closeShareModal() {
+    this.els.shareModal.hidden   = true;
+    document.body.style.overflow = '';
+  }
+
+  switchShareTab(activeTab) {
+    this.els.shareModal.querySelectorAll('.share-tab').forEach(t =>
+      t.classList.remove('active')
+    );
+    this.els.shareModal.querySelectorAll('.share-panel').forEach(p => {
+      p.hidden = true;
+    });
+    activeTab.classList.add('active');
+    document.getElementById(activeTab.dataset.panel).hidden = false;
+  }
+
+  async handleCopyLink() {
+    const url = this.els.magicLinkInput.value;
+    try {
+      await navigator.clipboard.writeText(url);
+      this.els.copyLinkBtn.textContent = '✅ הועתק!';
+      setTimeout(() => { this.els.copyLinkBtn.textContent = '📋 העתק'; }, 2200);
+    } catch {
+      this.els.magicLinkInput.select();
+    }
+  }
+
+  handleShareViaWhatsApp() {
+    const url = this.els.magicLinkInput.value;
+    const msg = `🛒 רשימת הקניות שלי (לחץ לפתיחה): ${url}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+  }
+
+  handleToggleQR() {
+    if (!this.els.qrContainer.hidden) {
+      this.els.qrContainer.hidden      = true;
+      this.els.qrContainer.innerHTML   = '';
+      this.els.toggleQrBtn.textContent = '📷 הצג QR';
+      return;
+    }
+    this.generateQR(this.els.magicLinkInput.value);
+  }
+
+  generateQR(url) {
+    try {
+      /* global qrcode */
+      const qr = qrcode(0, 'M');
+      qr.addData(url);
+      qr.make();
+      const svgStr = qr.createSvgTag(4, 2);
+      this.els.qrContainer.innerHTML = svgStr;
+      // Make SVG responsive
+      const svgEl = this.els.qrContainer.querySelector('svg');
+      if (svgEl) {
+        const w = svgEl.getAttribute('width');
+        const h = svgEl.getAttribute('height');
+        if (w && h) svgEl.setAttribute('viewBox', `0 0 ${w} ${h}`);
+        svgEl.removeAttribute('width');
+        svgEl.removeAttribute('height');
+      }
+      this.els.qrContainer.hidden      = false;
+      this.els.toggleQrBtn.textContent = '🙈 הסתר QR';
+    } catch {
+      this.els.qrContainer.innerHTML   = '<p class="qr-error">הרשימה ארוכה מדי לקוד QR — השתמש בקישור</p>';
+      this.els.qrContainer.hidden      = false;
+    }
+  }
+
+  // ── Chapter 4: WhatsApp Text Import ──────────────────────────
+
+  guessCategory(name) {
+    const n = name;
+    if (/חלב|גבינ|יוגורט|ביצ|קוטג|שמנת|מוצרלה|פרמזן|בולגרי|לאבנה/.test(n))         return 'dairy_eggs';
+    if (/לחם|חלה|פיתה|בגט|עוגה|עוגי|קרואסון|מאפה/.test(n))                           return 'bakery';
+    if (/עגבני|מלפפ|פלפל|בצל|שום|תפוח|בננ|לימון|אבוקדו|גזר|סלק|תות|ענב|מנגו|אננס|קיווי|ברוקולי|כרוב|חסה|תרד|זוקיני|חציל|דלעת|בטטה/.test(n)) return 'fruits_vegetables';
+    if (/בשר|עוף|דג|קציצ|שניצל|טחון|סלמון|טונה|אמנון|נקניק|כבד|פרגית/.test(n))      return 'meat_fish';
+    if (/שמן|סוכר|קמח|אורז|פסטה|שוקולד|ריבה|מים|קפה|תה|דבש|חומוס|טחינה|קטשופ|מיונז|מלח|שימורים|שעועית|עדשים/.test(n)) return 'pantry';
+    if (/סבון|שמפו|מרכך|נייר|ניקוי|אבקה|ספוג|שקיות/.test(n))                         return 'cleaning';
+    return 'other';
+  }
+
+  parseWhatsAppText(text) {
+    if (!text?.trim()) return [];
+    return text
+      .split(/[\n,]+/)
+      .map(line => line.replace(/^[\s\-\*•✓✗\d.\)]+/, '').trim())
+      .filter(line => line.length >= 2)
+      .map(line => {
+        const afterNum  = line.match(/^(.+?)\s+×?(\d+)\s*$/);  // "חלב 2"
+        const beforeNum = line.match(/^×?(\d+)\s+(.+)$/);      // "2 חלב"
+        let name, qty;
+        if (afterNum)  { name = afterNum[1].trim();  qty = parseInt(afterNum[2],  10); }
+        else if (beforeNum) { qty = parseInt(beforeNum[1], 10); name = beforeNum[2].trim(); }
+        else           { name = line; qty = 1; }
+        name = name.replace(/\s*\(.*\)\s*$/, '').trim(); // strip trailing parens
+        if (name.length < 2) return null;
+        return { name, quantity: Math.max(1, qty || 1), category: this.guessCategory(name) };
+      })
+      .filter(Boolean);
+  }
+
+  updateImportPreview() {
+    const parsed  = this.parseWhatsAppText(this.els.importTextarea.value);
+    const preview = this.els.importPreview;
+    if (parsed.length === 0) { preview.hidden = true; return; }
+
+    const ICON = Object.fromEntries(CATEGORIES.map(c => [c.id, c.icon]));
+    preview.innerHTML = `
+      <p class="preview-label">${parsed.length} מוצרים לייבוא:</p>
+      <div class="preview-chips">
+        ${parsed.map(p => `
+          <span class="preview-chip">
+            ${ICON[p.category] || '📦'} ${this.escapeHtml(p.name)}${p.quantity > 1 ? ` ×${p.quantity}` : ''}
+          </span>`).join('')}
+      </div>`;
+    preview.hidden = false;
+  }
+
+  handleImportFromText() {
+    const parsed = this.parseWhatsAppText(this.els.importTextarea.value);
+    if (parsed.length === 0) { this.markInvalid(this.els.importTextarea); return; }
+
+    parsed.forEach(({ name, quantity, category }) => {
+      this.products.unshift(new Product(this.createId(), name, category, quantity));
+      this.addToHistory(name);
+    });
+    this.saveData();
+    this.render();
+    this.vibrate([80, 40, 80]);
+    this.closeShareModal();
+    this.showToast(`✅ יובאו ${parsed.length} מוצרים`);
   }
 
   registerServiceWorker() {
