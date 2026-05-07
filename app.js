@@ -1,11 +1,13 @@
 'use strict';
 
 /* ================================================================
-   Smart Shop v5 — Final
+   Smart Shop v6 — Sprint 6 + Multi-List
    Ch2: Price · Priority · Budget · Focus Mode · Autocomplete
    Ch3: Swipe · Undo Toast · Vibration · Wake Lock · Confetti · Audio
    Ch4: Magic Link · QR Generate/Scan · WhatsApp Import · Dark Mode
    Ch5: App Lock (PIN) · Settings · OTA Updates · Offline-First SW
+   Ch6: Multi-List · Dashboard · Templates · Archive · Dynamic Theme
+        · Voice Recognition · App Badging · Predictive Lists · RTL Fix
    ================================================================ */
 
 const CATEGORIES = [
@@ -18,7 +20,39 @@ const CATEGORIES = [
   { id: 'other',             name: 'שונות',             icon: '📦' },
 ];
 
-// ── מחלקת מוצר ────────────────────────────────────────────────────
+const THEMES = [
+  { id: 'green',  label: 'ירוק',   primary: '#1f7a4d', strong: '#135c37', light: '#2ea862', accent: '#f0b429' },
+  { id: 'blue',   label: 'כחול',   primary: '#2563eb', strong: '#1d4ed8', light: '#60a5fa', accent: '#f59e0b' },
+  { id: 'purple', label: 'סגול',   primary: '#7c3aed', strong: '#6d28d9', light: '#a78bfa', accent: '#f472b6' },
+  { id: 'red',    label: 'אדום',   primary: '#dc2626', strong: '#b91c1c', light: '#f87171', accent: '#fbbf24' },
+  { id: 'teal',   label: 'טורקיז', primary: '#0d9488', strong: '#0f766e', light: '#2dd4bf', accent: '#f0b429' },
+  { id: 'pink',   label: 'ורוד',   primary: '#db2777', strong: '#be185d', light: '#f472b6', accent: '#a3e635' },
+];
+
+const TEMPLATES = [
+  { name: 'קניות בסיסיות', icon: '🥗', items: [
+    { name: 'לחם',        cat: 'bakery',            qty: 1 },
+    { name: 'חלב',        cat: 'dairy_eggs',        qty: 1 },
+    { name: 'ביצים',      cat: 'dairy_eggs',        qty: 1 },
+    { name: 'עגבניות',    cat: 'fruits_vegetables', qty: 1 },
+    { name: 'מלפפון',     cat: 'fruits_vegetables', qty: 1 },
+    { name: 'גבינה לבנה', cat: 'dairy_eggs',        qty: 1 },
+  ]},
+  { name: 'שישי בבית', icon: '🏠', items: [
+    { name: 'חלות',       cat: 'bakery',            qty: 2 },
+    { name: 'יין',        cat: 'other',             qty: 1 },
+    { name: 'סלט ירקות',  cat: 'fruits_vegetables', qty: 1 },
+    { name: 'דג',         cat: 'meat_fish',         qty: 1 },
+  ]},
+  { name: 'מסיבה', icon: '🎉', items: [
+    { name: 'שתייה קלה',  cat: 'other',      qty: 4 },
+    { name: 'חטיפים',     cat: 'pantry',     qty: 3 },
+    { name: 'נקניקיות',   cat: 'meat_fish',  qty: 2 },
+    { name: 'לחמניות',    cat: 'bakery',     qty: 12 },
+  ]},
+];
+
+// ── Product class ────────────────────────────────────────────────────
 
 class Product {
   constructor(id, name, category, quantity = 1, isBought = false,
@@ -39,35 +73,60 @@ class Product {
 
 class AppManager {
   constructor() {
-    this.storageKey          = 'smart_shop_products_v1';
-    this.historyKey          = 'smart_shop_history_v1';
-    this.products            = [];
-    this.history             = [];
-    this.focusMode           = false;
-    this._priority           = 0;
-    this._undoTimer          = null;
-    this._lastAllBought      = false;
-    this.wakeLock            = null;
-    this._swipeTouch         = null;   // { item, inner, startX, startY, lastX, tracking }
-    this._pendingImport      = null;   // products decoded from incoming magic link
-    this._scanStream         = null;   // MediaStream from camera
-    this._scanActive         = false;  // QR scan loop running
-    this._pinBuffer          = '';
-    this._lockEnabled        = false;
-    this._pinHash            = null;
-    this._swReg              = null;   // ServiceWorkerRegistration
+    this.storageKeyV2     = 'smart_shop_v2';
+    this.storageKeyV1     = 'smart_shop_products_v1';
+    this.historyKey       = 'smart_shop_history_v1';
+    this.purchaseLogKey   = 'smart_shop_purchase_log';
+    this.snoozeKey        = 'smart_shop_snooze';
+    this.themeKey         = 'smart_shop_theme';
+
+    this.workspace        = null;       // V2 workspace { version, lists }
+    this.activeListId     = null;       // currently viewed list ID
+    this.currentView      = 'lists';    // 'lists' | 'list-detail' | 'templates' | 'settings'
+    this.history          = [];
+    this.purchaseLog      = {};         // { name: { category, dates[] } }
+    this.snoozeMap        = {};         // { name: timestamp }
+    this.focusMode        = false;
+    this._priority        = 0;
+    this._undoTimer       = null;
+    this._lastAllBought   = false;
+    this.wakeLock         = null;
+    this._swipeTouch      = null;
+    this._pendingImport   = null;
+    this._scanStream      = null;
+    this._scanActive      = false;
+    this._pinBuffer       = '';
+    this._lockEnabled     = false;
+    this._pinHash         = null;
+    this._swReg           = null;
+    this._predictiveOpen  = true;
+    this._selectedIcon    = '🛒';
 
     this.cacheDom();
+    this.applyTheme(localStorage.getItem(this.themeKey) || 'green');
+
     // Quick sync check — hide lock screen immediately if user disabled it
     if (localStorage.getItem('smart_shop_lock_enabled') === 'false') {
       this.els.lockScreen.hidden = true;
     }
-    this.initLock();   // async — sets up PIN hash, shows/hides hint
+    this.initLock();
+
     this.loadData();
     this.loadHistory();
+    this.loadPurchaseLog();
+    this.loadSnooze();
     this.populateCategories();
+    this.renderThemePicker();
     this.bindEvents();
     this.setupSwipes();
+
+    // Auto-navigate: if exactly 1 active list, jump into it
+    const activeLists = this.workspace.lists.filter(l => !l.isArchived);
+    if (activeLists.length === 1) {
+      this.activeListId = activeLists[0].id;
+      this.currentView = 'list-detail';
+    }
+
     this.render();
     this.checkIncomingLink();
     this.registerServiceWorker();
@@ -77,15 +136,37 @@ class AppManager {
 
   cacheDom() {
     this.els = {
-      focusModeBtn:   document.getElementById('focusModeBtn'),
-      summaryStrip:   document.getElementById('summaryStrip'),
-      summaryTotal:   document.getElementById('summaryTotal'),
-      summaryBought:  document.getElementById('summaryBought'),
-      summaryLeft:    document.getElementById('summaryLeft'),
-      summaryBudget:  document.getElementById('summaryBudget'),
+      // Header
+      headerEyebrow: document.getElementById('headerEyebrow'),
+      headerTitle:   document.getElementById('headerTitle'),
+      headerActions: document.getElementById('headerActions'),
+      btnBack:       document.getElementById('btnBack'),
+      focusModeBtn:  document.getElementById('focusModeBtn'),
+      summaryStrip:  document.getElementById('summaryStrip'),
+      summaryTotal:  document.getElementById('summaryTotal'),
+      summaryBought: document.getElementById('summaryBought'),
+      summaryLeft:   document.getElementById('summaryLeft'),
+      summaryBudget: document.getElementById('summaryBudget'),
+      // Views
+      viewLists:      document.getElementById('viewLists'),
+      viewListDetail: document.getElementById('viewListDetail'),
+      viewTemplates:  document.getElementById('viewTemplates'),
+      viewSettings:   document.getElementById('viewSettings'),
+      listsGrid:      document.getElementById('listsGrid'),
+      emptyDashboard: document.getElementById('emptyDashboard'),
+      templatesGrid:  document.getElementById('templatesGrid'),
+      // List detail
       emptyState:     document.getElementById('emptyState'),
       categoriesEl:   document.getElementById('categoriesContainer'),
+      archiveListBtn: document.getElementById('archiveListBtn'),
+      // Predictive
+      predictiveSection: document.getElementById('predictiveSection'),
+      predictiveList:    document.getElementById('predictiveList'),
+      // Bottom nav
+      bottomNav:      document.getElementById('bottomNav'),
+      // WhatsApp FAB
       shareButton:    document.getElementById('shareWhatsAppButton'),
+      // Product modal
       modal:          document.getElementById('productModal'),
       form:           document.getElementById('productForm'),
       nameInput:      document.getElementById('productName'),
@@ -95,10 +176,12 @@ class AppManager {
       unitSelect:     document.getElementById('productUnit'),
       priceInput:     document.getElementById('productPrice'),
       priorityToggle: document.getElementById('priorityToggle'),
+      voiceBtn:       document.getElementById('voiceBtn'),
+      // Undo toast
       undoToast:      document.getElementById('undoToast'),
       undoMessage:    document.getElementById('undoMessage'),
       undoBtn:        document.getElementById('undoBtn'),
-      // Chapter 4
+      // Share modal (Ch4)
       shareModal:     document.getElementById('shareModal'),
       magicLinkInput: document.getElementById('magicLinkInput'),
       copyLinkBtn:    document.getElementById('copyLinkBtn'),
@@ -111,40 +194,181 @@ class AppManager {
       qrScanWrapper:  document.getElementById('qrScanWrapper'),
       qrVideo:        document.getElementById('qrVideo'),
       qrCanvas:       document.getElementById('qrCanvas'),
-      // Chapter 5
-      lockScreen:      document.getElementById('lockScreen'),
-      lockInner:       document.getElementById('lockInner'),
-      pinDots:         document.getElementById('pinDots'),
-      pinPad:          document.getElementById('pinPad'),
-      lockError:       document.getElementById('lockError'),
-      lockHint:        document.getElementById('lockHint'),
-      settingsModal:   document.getElementById('settingsModal'),
-      lockToggle:      document.getElementById('lockToggle'),
-      newPinInput:     document.getElementById('newPinInput'),
+      // Lock screen (Ch5)
+      lockScreen:     document.getElementById('lockScreen'),
+      lockInner:      document.getElementById('lockInner'),
+      pinDots:        document.getElementById('pinDots'),
+      pinPad:         document.getElementById('pinPad'),
+      lockError:      document.getElementById('lockError'),
+      lockHint:       document.getElementById('lockHint'),
+      // Settings (now a view)
+      lockToggle:     document.getElementById('lockToggle'),
+      newPinInput:    document.getElementById('newPinInput'),
       changePinSection: document.getElementById('changePinSection'),
-      updateToast:     document.getElementById('updateToast'),
+      themePicker:    document.getElementById('themePicker'),
+      // New list modal
+      newListModal:   document.getElementById('newListModal'),
+      newListName:    document.getElementById('newListName'),
+      iconPicker:     document.getElementById('iconPicker'),
+      // Archive modal
+      archiveModal:   document.getElementById('archiveModal'),
+      archiveContent: document.getElementById('archiveContent'),
+      // Update toast
+      updateToast:    document.getElementById('updateToast'),
     };
   }
 
-  // ── שמירה / טעינה ─────────────────────────────────────────────────
-
-  saveData() {
-    localStorage.setItem(this.storageKey, JSON.stringify(this.products));
-  }
+  // ── Data V2 ──────────────────────────────────────────────────────
 
   loadData() {
-    try {
-      const saved = localStorage.getItem(this.storageKey);
-      const parsed = saved ? JSON.parse(saved) : [];
-      this.products = parsed.map(item => new Product(
-        item.id, item.name, item.category,
-        item.quantity, item.isBought,
-        item.price, item.priority, item.unit
-      ));
-    } catch { this.products = []; }
+    // Try V2 first
+    const v2raw = localStorage.getItem(this.storageKeyV2);
+    if (v2raw) {
+      try {
+        this.workspace = this.hydrateWorkspace(JSON.parse(v2raw));
+      } catch { this.workspace = { version: 2, lists: [] }; }
+      return;
+    }
+
+    // Migrate from V1
+    const v1raw = localStorage.getItem(this.storageKeyV1);
+    if (v1raw) {
+      try {
+        const items = JSON.parse(v1raw);
+        const products = items.map(item => new Product(
+          item.id, item.name, item.category,
+          item.quantity, item.isBought,
+          item.price, item.priority, item.unit
+        ));
+        const list = {
+          id: this.createId(), name: 'הרשימה שלי',
+          icon: '🛒', createdAt: Date.now(), isArchived: false,
+          products
+        };
+        this.workspace = { version: 2, lists: [list] };
+        this.saveData();
+        localStorage.removeItem(this.storageKeyV1);
+      } catch { this.workspace = { version: 2, lists: [] }; }
+      return;
+    }
+
+    // Fresh start
+    this.workspace = { version: 2, lists: [] };
   }
 
-  // ── היסטוריית השלמה ───────────────────────────────────────────────
+  hydrateWorkspace(raw) {
+    return {
+      version: 2,
+      lists: (raw.lists || []).map(l => ({
+        id:         l.id,
+        name:       l.name || 'רשימה',
+        icon:       l.icon || '🛒',
+        createdAt:  l.createdAt || Date.now(),
+        isArchived: Boolean(l.isArchived),
+        products:   (l.products || []).map(p => new Product(
+          p.id, p.name, p.category,
+          p.quantity, p.isBought,
+          p.price, p.priority, p.unit
+        ))
+      }))
+    };
+  }
+
+  saveData() {
+    localStorage.setItem(this.storageKeyV2, JSON.stringify(this.workspace));
+  }
+
+  getActiveList() {
+    if (!this.activeListId) return null;
+    return this.workspace.lists.find(l => l.id === this.activeListId) || null;
+  }
+
+  get products() {
+    const list = this.getActiveList();
+    return list ? list.products : [];
+  }
+
+  set products(val) {
+    const list = this.getActiveList();
+    if (list) list.products = val;
+  }
+
+  // ── List Management ──────────────────────────────────────────────
+
+  createList(name, icon) {
+    const list = {
+      id: this.createId(), name: name.trim() || 'רשימה חדשה',
+      icon: icon || '🛒', createdAt: Date.now(), isArchived: false,
+      products: []
+    };
+    this.workspace.lists.unshift(list);
+    this.saveData();
+    this.navigateTo('list-detail', list.id);
+  }
+
+  deleteList(id) {
+    const list = this.workspace.lists.find(l => l.id === id);
+    if (!list) return;
+    if (!confirm(`למחוק את "${list.name}"?`)) return;
+    this.workspace.lists = this.workspace.lists.filter(l => l.id !== id);
+    this.saveData();
+    if (this.activeListId === id) {
+      this.activeListId = null;
+      this.navigateTo('lists');
+    } else {
+      this.render();
+    }
+  }
+
+  archiveList(id) {
+    const list = this.workspace.lists.find(l => l.id === id);
+    if (!list) return;
+    list.isArchived = true;
+    this.saveData();
+    this.launchConfetti();
+    this.playSuccess();
+    this.vibrate([100, 50, 100, 50, 200]);
+    this.activeListId = null;
+    this.navigateTo('lists');
+    this.showToast(`📦 "${list.name}" הועבר לארכיון`);
+  }
+
+  restoreList(id) {
+    const list = this.workspace.lists.find(l => l.id === id);
+    if (!list) return;
+    list.isArchived = false;
+    list.products.forEach(p => { p.isBought = false; });
+    this.saveData();
+    this.renderArchive();
+    this.showToast(`✅ "${list.name}" שוחזר`);
+  }
+
+  deleteArchivedList(id) {
+    const list = this.workspace.lists.find(l => l.id === id);
+    if (!list) return;
+    if (!confirm(`למחוק לצמיתות את "${list.name}"?`)) return;
+    this.workspace.lists = this.workspace.lists.filter(l => l.id !== id);
+    this.saveData();
+    this.renderArchive();
+  }
+
+  applyTemplate(templateIndex) {
+    const tmpl = TEMPLATES[templateIndex];
+    if (!tmpl) return;
+    const list = {
+      id: this.createId(), name: tmpl.name,
+      icon: tmpl.icon, createdAt: Date.now(), isArchived: false,
+      products: tmpl.items.map(it =>
+        new Product(this.createId(), it.name, it.cat, it.qty)
+      )
+    };
+    this.workspace.lists.unshift(list);
+    this.saveData();
+    this.navigateTo('list-detail', list.id);
+    this.showToast(`✅ נוצרה רשימה "${tmpl.name}"`);
+  }
+
+  // ── History ──────────────────────────────────────────────────────
 
   loadHistory() {
     try {
@@ -173,10 +397,95 @@ class AppManager {
       .join('');
   }
 
-  // ── מוצרים ───────────────────────────────────────────────────────
+  // ── Purchase Log (Predictive) ──────────────────────────────────
+
+  loadPurchaseLog() {
+    try {
+      const raw = localStorage.getItem(this.purchaseLogKey);
+      this.purchaseLog = raw ? JSON.parse(raw) : {};
+    } catch { this.purchaseLog = {}; }
+  }
+
+  savePurchaseLog() {
+    localStorage.setItem(this.purchaseLogKey, JSON.stringify(this.purchaseLog));
+  }
+
+  recordPurchase(name, category) {
+    if (!this.purchaseLog[name]) {
+      this.purchaseLog[name] = { category, dates: [] };
+    }
+    this.purchaseLog[name].dates.push(Date.now());
+    if (this.purchaseLog[name].dates.length > 10) {
+      this.purchaseLog[name].dates = this.purchaseLog[name].dates.slice(-10);
+    }
+    this.savePurchaseLog();
+  }
+
+  loadSnooze() {
+    try {
+      const raw = localStorage.getItem(this.snoozeKey);
+      this.snoozeMap = raw ? JSON.parse(raw) : {};
+    } catch { this.snoozeMap = {}; }
+  }
+
+  saveSnooze() {
+    localStorage.setItem(this.snoozeKey, JSON.stringify(this.snoozeMap));
+  }
+
+  snoozeSuggestion(name) {
+    this.snoozeMap[name] = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
+    this.saveSnooze();
+    this.renderPredictive();
+  }
+
+  addSuggestionToList(name, category) {
+    this.addProduct(name, category, 1);
+    this.renderPredictive();
+  }
+
+  getSuggestions() {
+    const now = Date.now();
+    const suggestions = [];
+
+    for (const [name, data] of Object.entries(this.purchaseLog)) {
+      if (data.dates.length < 3) continue;
+
+      const intervals = [];
+      for (let i = 1; i < data.dates.length; i++) {
+        intervals.push(data.dates[i] - data.dates[i - 1]);
+      }
+      const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+      const lastPurchase = data.dates[data.dates.length - 1];
+      const elapsed = now - lastPurchase;
+      const ratio = elapsed / avgInterval;
+
+      if (ratio < 0.8) continue;
+
+      // Skip snoozed
+      const snoozeUntil = this.snoozeMap[name];
+      if (snoozeUntil && now < snoozeUntil) continue;
+
+      // Skip if already in current list and not bought
+      if (this.products.some(p => p.name === name && !p.isBought)) continue;
+
+      suggestions.push({
+        name,
+        category: data.category,
+        avgDays: Math.round(avgInterval / (1000 * 60 * 60 * 24)),
+        daysSince: Math.round(elapsed / (1000 * 60 * 60 * 24)),
+        urgency: ratio
+      });
+    }
+
+    return suggestions.sort((a, b) => b.urgency - a.urgency).slice(0, 8);
+  }
+
+  // ── Products ───────────────────────────────────────────────────
 
   addProduct(name, category, quantity, price = 0, priority = 0, unit = '') {
-    this.products.unshift(new Product(
+    const list = this.getActiveList();
+    if (!list) return;
+    list.products.unshift(new Product(
       this.createId(), name.trim(), category,
       quantity, false, price, priority, unit
     ));
@@ -190,37 +499,45 @@ class AppManager {
   toggleProduct(id) {
     const product = this.products.find(p => p.id === id);
     if (!product) return;
+    const wasBought = product.isBought;
     product.toggleStatus();
+    // Record purchase for predictive engine
+    if (product.isBought && !wasBought) {
+      this.recordPurchase(product.name, product.category);
+    }
     this.saveData();
     this.render();
     this.vibrate(product.isBought ? [60, 30, 60] : [30]);
     this.checkCompletion();
   }
 
-  /** מחיקה עם אפשרות ביטול (3.5 שניות) */
   deleteProductWithUndo(id) {
-    const product = this.products.find(p => p.id === id);
+    const list = this.getActiveList();
+    if (!list) return;
+    const product = list.products.find(p => p.id === id);
     if (!product) return;
 
     const snapshot  = { ...product };
-    const origIndex = this.products.indexOf(product);
+    const origIndex = list.products.indexOf(product);
 
-    this.products = this.products.filter(p => p.id !== id);
+    list.products = list.products.filter(p => p.id !== id);
     this.saveData();
     this.render();
     this.vibrate([50, 50, 80]);
 
     this.showUndoToast(`נמחק: ${product.name}`, () => {
-      // שחזור במיקום המקורי
       const restored = new Product(
         snapshot.id, snapshot.name, snapshot.category,
         snapshot.quantity, snapshot.isBought,
         snapshot.price, snapshot.priority, snapshot.unit
       );
-      this.products.splice(Math.min(origIndex, this.products.length), 0, restored);
-      this.saveData();
-      this.render();
-      this.vibrate([80]);
+      const activeList = this.getActiveList();
+      if (activeList) {
+        activeList.products.splice(Math.min(origIndex, activeList.products.length), 0, restored);
+        this.saveData();
+        this.render();
+        this.vibrate([80]);
+      }
     });
   }
 
@@ -240,15 +557,132 @@ class AppManager {
     this.closeModal();
   }
 
-  // ── רינדור ───────────────────────────────────────────────────────
+  // ── Navigation ─────────────────────────────────────────────────
+
+  navigateTo(view, listId = null) {
+    if (listId) this.activeListId = listId;
+    this.currentView = view;
+
+    // If navigating to list-detail, verify list exists
+    if (view === 'list-detail') {
+      const list = this.getActiveList();
+      if (!list) {
+        this.currentView = 'lists';
+        this.activeListId = null;
+      }
+    }
+
+    this.render();
+  }
+
+  updateHeader() {
+    const isDetail = this.currentView === 'list-detail';
+    const list     = this.getActiveList();
+
+    this.els.btnBack.hidden       = !isDetail;
+    this.els.headerActions.hidden = !isDetail;
+    this.els.summaryStrip.hidden  = !isDetail || this.products.length === 0;
+
+    if (isDetail && list) {
+      this.els.headerEyebrow.textContent = `${list.icon} ${this.escapeHtml(list.name)}`;
+      this.els.headerTitle.textContent   = 'Smart Shop';
+    } else if (this.currentView === 'templates') {
+      this.els.headerEyebrow.textContent = '📋 תבניות מוכנות';
+      this.els.headerTitle.textContent   = 'Smart Shop';
+    } else if (this.currentView === 'settings') {
+      this.els.headerEyebrow.textContent = '⚙️ הגדרות';
+      this.els.headerTitle.textContent   = 'Smart Shop';
+    } else {
+      this.els.headerEyebrow.textContent = 'רשימת קניות אישית';
+      this.els.headerTitle.textContent   = 'Smart Shop';
+    }
+  }
+
+  updateBottomNav() {
+    const tabName = (this.currentView === 'list-detail') ? 'lists' : this.currentView;
+    this.els.bottomNav.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tabName);
+    });
+  }
+
+  // ── Rendering ──────────────────────────────────────────────────
 
   render() {
-    const total  = this.products.length;
-    const bought = this.products.filter(p => p.isBought).length;
+    // Hide all views
+    this.els.viewLists.hidden      = true;
+    this.els.viewListDetail.hidden = true;
+    this.els.viewTemplates.hidden  = true;
+    this.els.viewSettings.hidden   = true;
+
+    switch (this.currentView) {
+      case 'lists':       this.renderDashboard(); break;
+      case 'list-detail': this.renderListDetail(); break;
+      case 'templates':   this.renderTemplates(); break;
+      case 'settings':    this.renderSettingsView(); break;
+    }
+
+    this.updateHeader();
+    this.updateBottomNav();
+    this.updateBadge();
+  }
+
+  renderDashboard() {
+    this.els.viewLists.hidden = false;
+    this.els.shareButton.hidden = true;
+
+    const activeLists = this.workspace.lists.filter(l => !l.isArchived);
+    this.els.emptyDashboard.hidden = activeLists.length > 0;
+
+    if (activeLists.length === 0) {
+      this.els.listsGrid.innerHTML = '';
+      return;
+    }
+
+    this.els.listsGrid.innerHTML = activeLists.map(list => {
+      const total  = list.products.length;
+      const bought = list.products.filter(p => p.isBought).length;
+      const pct    = total > 0 ? Math.round((bought / total) * 100) : 0;
+      const timeLeft = total > 0 ? Math.ceil((total - bought) * 1.5) : 0;
+      const statusText = total === 0
+        ? 'ריקה'
+        : bought === total
+          ? '✅ הושלמה!'
+          : `${bought}/${total} (${pct}%) · ⏱ ~${timeLeft} דק׳`;
+
+      return `
+<article class="list-card" data-list-id="${this.escapeHtml(list.id)}">
+  <div class="list-card-top">
+    <span class="list-card-icon">${list.icon}</span>
+    <div class="list-card-info">
+      <h3 class="list-card-name">${this.escapeHtml(list.name)}</h3>
+      <p class="list-card-status">${statusText}</p>
+    </div>
+    <button class="list-card-delete" data-action="delete-list"
+            data-list-id="${this.escapeHtml(list.id)}" aria-label="מחק רשימה">×</button>
+  </div>
+  <div class="list-card-progress">
+    <div class="list-card-bar" style="width:${pct}%"></div>
+  </div>
+</article>`;
+    }).join('') + `
+<button class="new-list-card" id="newListCardBtn" type="button">
+  <span class="new-list-card-icon">+</span>
+  <span>רשימה חדשה</span>
+</button>`;
+  }
+
+  renderListDetail() {
+    this.els.viewListDetail.hidden = false;
+    const list = this.getActiveList();
+    if (!list) return;
+
+    const total  = list.products.length;
+    const bought = list.products.filter(p => p.isBought).length;
     const left   = total - bought;
-    const budget = this.products
+    const budget = list.products
       .filter(p => !p.isBought && p.price > 0)
       .reduce((s, p) => s + p.price * p.quantity, 0);
+    const timeLeft = Math.ceil(left * 1.5);
 
     this.els.emptyState.hidden   = total > 0;
     this.els.summaryStrip.hidden = total === 0;
@@ -256,20 +690,26 @@ class AppManager {
 
     this.els.summaryTotal.textContent  = `${total} ${total === 1 ? 'מוצר' : 'מוצרים'}`;
     this.els.summaryBought.textContent = `${bought} נקנו`;
-    this.els.summaryLeft.textContent   = `${left} חסרים`;
+    this.els.summaryLeft.textContent   = left > 0
+      ? `${left} חסרים · ⏱~${timeLeft}דק׳`
+      : '✅ הכל נאסף!';
     this.els.summaryBudget.textContent = budget > 0 ? `₪${budget.toFixed(0)} משוער` : '';
+
+    // Show archive button when all bought
+    this.els.archiveListBtn.hidden = !(total > 0 && bought === total);
 
     this.els.categoriesEl.innerHTML = CATEGORIES
       .map(cat => this.renderCategory(cat))
       .filter(Boolean)
       .join('');
+
+    this.renderPredictive();
   }
 
   renderCategory(category) {
     let products = this.products.filter(p => p.category === category.id);
     if (products.length === 0) return '';
 
-    // מיון: ⭐ + לא-נקנה → רגיל + לא-נקנה → ⭐ + נקנה → רגיל + נקנה
     products = [
       ...products.filter(p => p.priority === 1 && !p.isBought),
       ...products.filter(p => p.priority === 0 && !p.isBought),
@@ -322,12 +762,186 @@ class AppManager {
 </li>`;
   }
 
-  // ── Swipe-to-Action ───────────────────────────────────────────────
+  renderTemplates() {
+    this.els.viewTemplates.hidden = false;
+    this.els.shareButton.hidden   = true;
+
+    this.els.templatesGrid.innerHTML = TEMPLATES.map((tmpl, i) => `
+<article class="template-card">
+  <div class="template-card-top">
+    <span class="template-card-icon">${tmpl.icon}</span>
+    <div>
+      <h3 class="template-card-name">${this.escapeHtml(tmpl.name)}</h3>
+      <p class="template-card-count">${tmpl.items.length} מוצרים</p>
+    </div>
+  </div>
+  <ul class="template-items">${tmpl.items.map(it =>
+    `<li>${this.escapeHtml(it.name)}${it.qty > 1 ? ` ×${it.qty}` : ''}</li>`
+  ).join('')}</ul>
+  <button class="primary-button template-apply-btn" data-template="${i}" type="button">
+    + צור רשימה מתבנית
+  </button>
+</article>`).join('');
+  }
+
+  renderSettingsView() {
+    this.els.viewSettings.hidden = false;
+    this.els.shareButton.hidden  = true;
+
+    // Sync lock toggle
+    this.els.lockToggle.checked = this._lockEnabled;
+    this.els.changePinSection.hidden = !this._lockEnabled;
+  }
+
+  renderPredictive() {
+    if (this.currentView !== 'list-detail') return;
+    const suggestions = this.getSuggestions();
+    if (suggestions.length === 0) {
+      this.els.predictiveSection.hidden = true;
+      return;
+    }
+
+    this.els.predictiveSection.hidden = false;
+    const ICON = Object.fromEntries(CATEGORIES.map(c => [c.id, c.icon]));
+    this.els.predictiveList.hidden = !this._predictiveOpen;
+    this.els.predictiveList.innerHTML = suggestions.map(s => `
+<div class="predict-item">
+  <span class="predict-icon">${ICON[s.category] || '📦'}</span>
+  <div class="predict-info">
+    <span class="predict-name">${this.escapeHtml(s.name)}</span>
+    <span class="predict-meta">כל ~${s.avgDays} ימים · ${s.daysSince} ימים עברו</span>
+  </div>
+  <div class="predict-actions">
+    <button class="predict-add" data-action="predict-add"
+            data-name="${this.escapeHtml(s.name)}" data-cat="${this.escapeHtml(s.category)}">+</button>
+    <button class="predict-snooze" data-action="predict-snooze"
+            data-name="${this.escapeHtml(s.name)}">💤</button>
+  </div>
+</div>`).join('');
+  }
+
+  renderArchive() {
+    const archived = this.workspace.lists.filter(l => l.isArchived);
+    if (archived.length === 0) {
+      this.els.archiveContent.innerHTML = '<p class="archive-empty">הארכיון ריק</p>';
+      return;
+    }
+    this.els.archiveContent.innerHTML = archived.map(list => {
+      const total = list.products.length;
+      const date  = new Date(list.createdAt).toLocaleDateString('he-IL');
+      return `
+<div class="archive-item">
+  <span class="archive-icon">${list.icon}</span>
+  <div class="archive-info">
+    <span class="archive-name">${this.escapeHtml(list.name)}</span>
+    <span class="archive-meta">${total} מוצרים · ${date}</span>
+  </div>
+  <div class="archive-actions">
+    <button class="secondary-button small" data-action="restore-list"
+            data-list-id="${this.escapeHtml(list.id)}">♻️ שחזר</button>
+    <button class="danger-btn-sm" data-action="delete-archived"
+            data-list-id="${this.escapeHtml(list.id)}">🗑</button>
+  </div>
+</div>`;
+    }).join('');
+  }
+
+  // ── Theme ──────────────────────────────────────────────────────
+
+  applyTheme(themeId) {
+    const theme = THEMES.find(t => t.id === themeId) || THEMES[0];
+    const root  = document.documentElement;
+    root.style.setProperty('--primary',       theme.primary);
+    root.style.setProperty('--primary-strong', theme.strong);
+    root.style.setProperty('--primary-light',  theme.light);
+    root.style.setProperty('--accent',         theme.accent);
+    // Update meta theme-color
+    const meta = document.getElementById('metaThemeColor');
+    if (meta) meta.content = theme.primary;
+    localStorage.setItem(this.themeKey, themeId);
+    this._currentTheme = themeId;
+  }
+
+  renderThemePicker() {
+    if (!this.els.themePicker) return;
+    const current = this._currentTheme || 'green';
+    this.els.themePicker.innerHTML = THEMES.map(t => `
+<button class="theme-swatch${t.id === current ? ' selected' : ''}"
+        data-theme="${t.id}" title="${t.label}"
+        style="--swatch:${t.primary}" type="button">
+  ${t.id === current ? '✓' : ''}
+</button>`).join('');
+  }
+
+  // ── Voice Recognition ──────────────────────────────────────────
+
+  startVoiceRecognition() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      this.showToast('❌ הקלטה קולית אינה נתמכת בדפדפן זה');
+      return;
+    }
+
+    const recognition = new SR();
+    recognition.lang = 'he-IL';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    this.els.voiceBtn.classList.add('voice-active');
+
+    recognition.onresult = (event) => {
+      const text = event.results[0][0].transcript;
+      // Split on commas and Hebrew "ו" (and)
+      const items = text
+        .split(/[,،]\s*|\s+ו(?:\s+|$)/)
+        .map(s => s.trim())
+        .filter(s => s.length >= 2);
+
+      if (items.length === 1) {
+        this.els.nameInput.value = items[0];
+        this.els.nameInput.focus();
+      } else if (items.length > 1) {
+        items.forEach(name => {
+          this.addProduct(name, this.guessCategory(name), 1);
+        });
+        this.closeModal();
+        this.showToast(`✅ נוספו ${items.length} מוצרים`);
+      }
+    };
+
+    recognition.onerror = () => {
+      this.els.voiceBtn.classList.remove('voice-active');
+      this.showToast('❌ שגיאה בהקלטה');
+    };
+
+    recognition.onend = () => {
+      this.els.voiceBtn.classList.remove('voice-active');
+    };
+
+    recognition.start();
+  }
+
+  // ── App Badging ────────────────────────────────────────────────
+
+  updateBadge() {
+    if (!('setAppBadge' in navigator)) return;
+    // Count total missing items across all active lists
+    const total = this.workspace.lists
+      .filter(l => !l.isArchived)
+      .reduce((sum, l) => sum + l.products.filter(p => !p.isBought).length, 0);
+    if (total > 0) {
+      navigator.setAppBadge(total).catch(() => {});
+    } else {
+      navigator.clearAppBadge().catch(() => {});
+    }
+  }
+
+  // ── Swipe-to-Action ─────────────────────────────────────────────
 
   setupSwipes() {
     const container = this.els.categoriesEl;
-    const THRESHOLD = 72;   // px to trigger action
-    const MAX_SHIFT = 110;  // px cap during drag
+    const THRESHOLD = 72;
+    const MAX_SHIFT = 110;
 
     const reset = (touch) => {
       if (!touch) return;
@@ -344,8 +958,7 @@ class AppManager {
       this._swipeTouch = {
         item, inner,
         startX: t.clientX, startY: t.clientY,
-        lastX:  t.clientX,
-        tracking: false,
+        lastX: t.clientX, tracking: false,
       };
       inner.style.transition = 'none';
     }, { passive: true });
@@ -357,7 +970,6 @@ class AppManager {
       const dx = t.clientX - touch.startX;
       const dy = t.clientY - touch.startY;
 
-      // זיהוי גלילה אנכית — לא להפריע לה
       if (!touch.tracking) {
         if (Math.abs(dy) > Math.abs(dx) + 6) { this._swipeTouch = null; return; }
         if (Math.abs(dx) > 8) touch.tracking = true;
@@ -377,12 +989,9 @@ class AppManager {
       const touch = this._swipeTouch;
       if (!touch) return;
       this._swipeTouch = null;
-
       if (!touch.tracking) { reset(touch); return; }
-
       const dx = touch.lastX - touch.startX;
       reset(touch);
-
       const id = touch.item.dataset.id;
       if      (dx >  THRESHOLD) this.toggleProduct(id);
       else if (dx < -THRESHOLD) this.deleteProductWithUndo(id);
@@ -395,12 +1004,10 @@ class AppManager {
     });
   }
 
-  // ── Undo Toast ────────────────────────────────────────────────────
+  // ── Undo Toast ──────────────────────────────────────────────────
 
   showUndoToast(message, undoFn) {
     clearTimeout(this._undoTimer);
-
-    // החלפת כפתור ה"בטל" כדי להסיר listener ישן
     const oldBtn = this.els.undoBtn;
     const newBtn = oldBtn.cloneNode(true);
     newBtn.hidden = false;
@@ -428,7 +1035,6 @@ class AppManager {
     }, 320);
   }
 
-  /** Toast ללא כפתור ביטול (אינפורמציה בלבד) */
   showToast(message) {
     this.els.undoMessage.textContent = message;
     this.els.undoBtn.hidden          = true;
@@ -438,7 +1044,7 @@ class AppManager {
     this._undoTimer = setTimeout(() => this.hideUndoToast(), 2400);
   }
 
-  // ── Vibration API ─────────────────────────────────────────────────
+  // ── Vibration API ───────────────────────────────────────────────
 
   vibrate(pattern) {
     if ('vibrate' in navigator) {
@@ -446,14 +1052,14 @@ class AppManager {
     }
   }
 
-  // ── Wake Lock API ─────────────────────────────────────────────────
+  // ── Wake Lock API ───────────────────────────────────────────────
 
   async requestWakeLock() {
     if (!('wakeLock' in navigator)) return;
     try {
       this.wakeLock = await navigator.wakeLock.request('screen');
       this.wakeLock.addEventListener('release', () => { this.wakeLock = null; });
-    } catch { /* ignore — user may have denied or device doesn't support */ }
+    } catch { /* ignore */ }
   }
 
   releaseWakeLock() {
@@ -463,7 +1069,7 @@ class AppManager {
     }
   }
 
-  // ── Focus Mode ────────────────────────────────────────────────────
+  // ── Focus Mode ──────────────────────────────────────────────────
 
   toggleFocusMode() {
     this.focusMode = !this.focusMode;
@@ -481,7 +1087,7 @@ class AppManager {
     }
   }
 
-  // ── Completion Check + Confetti + Sound ───────────────────────────
+  // ── Completion Check + Confetti + Sound ─────────────────────────
 
   checkCompletion() {
     if (this.products.length === 0) return;
@@ -513,11 +1119,10 @@ class AppManager {
       ].join(';');
       wrap.appendChild(piece);
     }
-
     setTimeout(() => wrap.remove(), 2600);
   }
 
-  // ── Web Audio ─────────────────────────────────────────────────────
+  // ── Web Audio ───────────────────────────────────────────────────
 
   playSuccess() {
     try {
@@ -553,15 +1158,17 @@ class AppManager {
     } catch { /* ignore */ }
   }
 
-  // ── WhatsApp ──────────────────────────────────────────────────────
+  // ── WhatsApp ────────────────────────────────────────────────────
 
   generateWhatsAppText() {
     const missing = this.products.filter(p => !p.isBought);
     const bought  = this.products.filter(p => p.isBought);
     const budget  = missing.filter(p => p.price > 0)
                            .reduce((s, p) => s + p.price * p.quantity, 0);
+    const list = this.getActiveList();
+    const title = list ? list.name : 'הרשימה שלי';
 
-    const lines = ['🛒 *רשימת הקניות שלי*'];
+    const lines = [`🛒 *${title}*`];
 
     lines.push('', '*חסר לי:*');
     if (missing.length === 0) {
@@ -587,11 +1194,13 @@ class AppManager {
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
   }
 
-  // ── Events ────────────────────────────────────────────────────────
+  // ── Events ──────────────────────────────────────────────────────
 
   bindEvents() {
+    // Focus mode
     this.els.focusModeBtn.addEventListener('click', () => this.toggleFocusMode());
 
+    // Product modal
     document.getElementById('openProductModal').addEventListener('click', () => this.openModal());
     document.getElementById('emptyAddButton').addEventListener('click',  () => this.openModal());
     document.getElementById('closeProductModal').addEventListener('click',  () => this.closeModal());
@@ -599,6 +1208,7 @@ class AppManager {
     this.els.modal.addEventListener('click', e => { if (e.target === this.els.modal) this.closeModal(); });
     this.els.form.addEventListener('submit', e => { e.preventDefault(); this.handleProductSubmit(); });
 
+    // Priority toggle
     this.els.priorityToggle.addEventListener('click', () => {
       this._priority = this._priority === 0 ? 1 : 0;
       this.els.priorityToggle.dataset.priority = String(this._priority);
@@ -615,23 +1225,134 @@ class AppManager {
       if (btn) this.deleteProductWithUndo(btn.dataset.id);
     });
 
+    // WhatsApp FAB
     this.els.shareButton.addEventListener('click', () => this.openWhatsAppShare());
 
+    // Escape key
     document.addEventListener('keydown', e => {
       if (e.key !== 'Escape') return;
-      if (!this.els.modal.hidden)            this.closeModal();
-      else if (!this.els.shareModal.hidden)    this.closeShareModal();
-      else if (!this.els.settingsModal.hidden) this.closeSettingsModal();
+      if (!this.els.modal.hidden)         this.closeModal();
+      else if (!this.els.shareModal.hidden)   this.closeShareModal();
+      else if (!this.els.newListModal.hidden) this.closeNewListModal();
+      else if (!this.els.archiveModal.hidden) this.closeArchiveModal();
     });
 
-    // Re-request Wake Lock if page becomes visible again
+    // Wake Lock re-request
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && this.focusMode && !this.wakeLock) {
         this.requestWakeLock();
       }
     });
 
-    // ── Chapter 4: Share modal ────────────────────────────────────
+    // ── Navigation: Back button ──────────────────────────────
+    this.els.btnBack.addEventListener('click', () => this.navigateTo('lists'));
+
+    // ── Navigation: Bottom nav ───────────────────────────────
+    this.els.bottomNav.addEventListener('click', e => {
+      const btn = e.target.closest('.nav-btn');
+      if (!btn) return;
+      const tab = btn.dataset.tab;
+      if (tab === 'lists') {
+        this.activeListId = null;
+      }
+      this.navigateTo(tab);
+    });
+
+    // ── Dashboard: list cards ────────────────────────────────
+    this.els.listsGrid.addEventListener('click', e => {
+      // Delete list
+      const delBtn = e.target.closest('[data-action="delete-list"]');
+      if (delBtn) {
+        e.stopPropagation();
+        this.deleteList(delBtn.dataset.listId);
+        return;
+      }
+      // New list card
+      if (e.target.closest('#newListCardBtn')) {
+        this.openNewListModal();
+        return;
+      }
+      // Click list card
+      const card = e.target.closest('.list-card');
+      if (card) this.navigateTo('list-detail', card.dataset.listId);
+    });
+
+    // Empty dashboard new list button
+    document.getElementById('emptyNewListBtn').addEventListener('click', () => this.openNewListModal());
+
+    // ── Templates ────────────────────────────────────────────
+    this.els.templatesGrid.addEventListener('click', e => {
+      const btn = e.target.closest('.template-apply-btn');
+      if (btn) this.applyTemplate(Number(btn.dataset.template));
+    });
+
+    // ── New list modal ───────────────────────────────────────
+    document.getElementById('closeNewListModal').addEventListener('click', () => this.closeNewListModal());
+    this.els.newListModal.addEventListener('click', e => {
+      if (e.target === this.els.newListModal) this.closeNewListModal();
+    });
+    this.els.iconPicker.addEventListener('click', e => {
+      const btn = e.target.closest('.icon-btn');
+      if (!btn) return;
+      this.els.iconPicker.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      this._selectedIcon = btn.dataset.icon;
+    });
+    document.getElementById('createListBtn').addEventListener('click', () => {
+      const name = this.els.newListName.value.trim();
+      if (!name) { this.markInvalid(this.els.newListName); return; }
+      this.createList(name, this._selectedIcon);
+      this.closeNewListModal();
+    });
+
+    // ── Archive button in list detail ────────────────────────
+    this.els.archiveListBtn.addEventListener('click', () => {
+      if (this.activeListId) this.archiveList(this.activeListId);
+    });
+
+    // ── Archive modal ────────────────────────────────────────
+    document.getElementById('openArchiveBtn').addEventListener('click', () => this.openArchiveModal());
+    document.getElementById('closeArchiveModal').addEventListener('click', () => this.closeArchiveModal());
+    this.els.archiveModal.addEventListener('click', e => {
+      if (e.target === this.els.archiveModal) this.closeArchiveModal();
+    });
+    this.els.archiveContent.addEventListener('click', e => {
+      const restoreBtn = e.target.closest('[data-action="restore-list"]');
+      if (restoreBtn) { this.restoreList(restoreBtn.dataset.listId); return; }
+      const deleteBtn = e.target.closest('[data-action="delete-archived"]');
+      if (deleteBtn) { this.deleteArchivedList(deleteBtn.dataset.listId); return; }
+    });
+
+    // ── Settings view ────────────────────────────────────────
+    this.els.lockToggle.addEventListener('change', () => this.handleLockToggle());
+    document.getElementById('savePinBtn').addEventListener('click', () => this.handleSavePin());
+    document.getElementById('clearAllBtn').addEventListener('click', () => this.handleClearAll());
+
+    // Theme picker
+    this.els.themePicker.addEventListener('click', e => {
+      const swatch = e.target.closest('.theme-swatch');
+      if (!swatch) return;
+      this.applyTheme(swatch.dataset.theme);
+      this.renderThemePicker();
+    });
+
+    // ── Voice recognition ────────────────────────────────────
+    this.els.voiceBtn.addEventListener('click', () => this.startVoiceRecognition());
+
+    // ── Predictive section ───────────────────────────────────
+    document.getElementById('togglePredictive').addEventListener('click', () => {
+      this._predictiveOpen = !this._predictiveOpen;
+      this.els.predictiveList.hidden = !this._predictiveOpen;
+      document.getElementById('togglePredictive').textContent = this._predictiveOpen ? '▾' : '▸';
+    });
+    this.els.predictiveList.addEventListener('click', e => {
+      const addBtn = e.target.closest('[data-action="predict-add"]');
+      if (addBtn) { this.addSuggestionToList(addBtn.dataset.name, addBtn.dataset.cat); return; }
+      const snzBtn = e.target.closest('[data-action="predict-snooze"]');
+      if (snzBtn) { this.snoozeSuggestion(snzBtn.dataset.name); return; }
+    });
+
+    // ── Share modal (Ch4) ────────────────────────────────────
     document.getElementById('openShareModal').addEventListener('click',  () => this.openShareModal());
     document.getElementById('closeShareModal').addEventListener('click', () => this.closeShareModal());
     this.els.shareModal.addEventListener('click', e => {
@@ -650,23 +1371,18 @@ class AppManager {
     document.getElementById('scanQrBtn').addEventListener('click',            () => this.startQrScan());
     document.getElementById('stopScanBtn').addEventListener('click',          () => this.stopQrScan());
 
-    // ── Chapter 5: Lock screen + Settings + OTA ───────────────────
+    // ── Lock screen (Ch5) ────────────────────────────────────
     this.els.pinPad.addEventListener('click', e => {
       const btn = e.target.closest('[data-digit]');
       if (btn) this.handlePinDigit(btn.dataset.digit);
     });
     document.getElementById('forgotPinBtn').addEventListener('click', () => this.handleForgotPin());
-    document.getElementById('openSettings').addEventListener('click',  () => this.openSettingsModal());
-    document.getElementById('closeSettings').addEventListener('click', () => this.closeSettingsModal());
-    this.els.settingsModal.addEventListener('click', e => {
-      if (e.target === this.els.settingsModal) this.closeSettingsModal();
-    });
-    this.els.lockToggle.addEventListener('change', () => this.handleLockToggle());
-    document.getElementById('savePinBtn').addEventListener('click', () => this.handleSavePin());
-    document.getElementById('updateBtn').addEventListener('click',  () => this.handleUpdate());
+
+    // ── OTA ──────────────────────────────────────────────────
+    document.getElementById('updateBtn').addEventListener('click', () => this.handleUpdate());
   }
 
-  // ── Modal ─────────────────────────────────────────────────────────
+  // ── Modal ───────────────────────────────────────────────────────
 
   populateCategories() {
     this.els.categorySelect.innerHTML = CATEGORIES
@@ -675,6 +1391,10 @@ class AppManager {
   }
 
   openModal() {
+    if (!this.getActiveList()) {
+      this.showToast('❌ בחר רשימה קודם');
+      return;
+    }
     this._priority = 0;
     this.els.form.reset();
     this.els.quantityInput.value             = '1';
@@ -690,7 +1410,66 @@ class AppManager {
     document.body.style.overflow = '';
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────
+  // ── New List Modal ──────────────────────────────────────────────
+
+  openNewListModal() {
+    this.els.newListName.value = '';
+    this._selectedIcon = '🛒';
+    this.els.iconPicker.querySelectorAll('.icon-btn').forEach(b => {
+      b.classList.toggle('selected', b.dataset.icon === '🛒');
+    });
+    this.els.newListModal.hidden = false;
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => this.els.newListName.focus(), 50);
+  }
+
+  closeNewListModal() {
+    this.els.newListModal.hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  // ── Archive Modal ───────────────────────────────────────────────
+
+  openArchiveModal() {
+    this.renderArchive();
+    this.els.archiveModal.hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+
+  closeArchiveModal() {
+    this.els.archiveModal.hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  // ── Settings ────────────────────────────────────────────────────
+
+  handleLockToggle() {
+    this._lockEnabled = this.els.lockToggle.checked;
+    localStorage.setItem('smart_shop_lock_enabled', String(this._lockEnabled));
+    this.els.changePinSection.hidden = !this._lockEnabled;
+  }
+
+  async handleSavePin() {
+    const pin = this.els.newPinInput.value;
+    if (!/^\d{4}$/.test(pin)) {
+      this.markInvalid(this.els.newPinInput);
+      return;
+    }
+    this._pinHash = await this.hashPin(pin);
+    localStorage.setItem('smart_shop_pin_hash', this._pinHash);
+    localStorage.setItem('smart_shop_pin_custom', 'true');
+    if (this.els.lockHint) this.els.lockHint.hidden = true;
+    this.showToast('✅ קוד PIN עודכן');
+    this.els.newPinInput.value = '';
+  }
+
+  handleClearAll() {
+    if (!confirm('פעולה זו תמחק את כל הנתונים.\nלהמשיך?')) return;
+    localStorage.clear();
+    window.location.reload();
+  }
+
+  // ── Helpers ─────────────────────────────────────────────────────
 
   markInvalid(el) {
     el.classList.remove('shake');
@@ -711,10 +1490,9 @@ class AppManager {
       .replaceAll("'", '&#039;');
   }
 
-  // ── Chapter 4: Magic Link ─────────────────────────────────────
+  // ── Magic Link (Ch4) ───────────────────────────────────────────
 
   encodeMagicLink() {
-    // Compact: [name, category, quantity, unit, price, priority]
     const compact = this.products.map(p =>
       [p.name, p.category, p.quantity, p.unit, p.price, p.priority]
     );
@@ -742,7 +1520,6 @@ class AppManager {
     const params  = new URLSearchParams(location.search);
     const encoded = params.get('data');
     if (!encoded) return;
-    // Remove query string from URL bar immediately
     history.replaceState({}, '', location.pathname + location.hash);
     try {
       const products = this.decodeMagicLink(encoded);
@@ -756,6 +1533,19 @@ class AppManager {
   acceptIncomingLink() {
     if (!this._pendingImport) return;
     const count = this._pendingImport.length;
+
+    // If no active list, create one for the import
+    if (!this.getActiveList()) {
+      const list = {
+        id: this.createId(), name: 'רשימה מיובאת',
+        icon: '📥', createdAt: Date.now(), isArchived: false,
+        products: []
+      };
+      this.workspace.lists.unshift(list);
+      this.activeListId = list.id;
+      this.currentView = 'list-detail';
+    }
+
     this._pendingImport.forEach(p => {
       this.products.push(p);
       this.addToHistory(p.name);
@@ -774,7 +1564,7 @@ class AppManager {
     this.els.incomingBanner.hidden = true;
   }
 
-  // ── Chapter 4: Share Modal ────────────────────────────────────
+  // ── Share Modal (Ch4) ───────────────────────────────────────────
 
   openShareModal() {
     this.els.magicLinkInput.value    = this.encodeMagicLink();
@@ -783,7 +1573,6 @@ class AppManager {
     this.els.toggleQrBtn.textContent = '📷 הצג QR';
     this.els.importTextarea.value    = '';
     this.els.importPreview.hidden    = true;
-    // Reset to Export tab
     this.switchShareTab(
       this.els.shareModal.querySelector('[data-panel="panelExport"]')
     );
@@ -844,7 +1633,6 @@ class AppManager {
       qr.make();
       const svgStr = qr.createSvgTag(4, 2);
       this.els.qrContainer.innerHTML = svgStr;
-      // Make SVG responsive
       const svgEl = this.els.qrContainer.querySelector('svg');
       if (svgEl) {
         const w = svgEl.getAttribute('width');
@@ -861,7 +1649,7 @@ class AppManager {
     }
   }
 
-  // ── Chapter 4: WhatsApp Text Import ──────────────────────────
+  // ── WhatsApp Text Import (Ch4) ──────────────────────────────────
 
   guessCategory(name) {
     const n = name;
@@ -881,13 +1669,13 @@ class AppManager {
       .map(line => line.replace(/^[\s\-\*•✓✗\d.\)]+/, '').trim())
       .filter(line => line.length >= 2)
       .map(line => {
-        const afterNum  = line.match(/^(.+?)\s+×?(\d+)\s*$/);  // "חלב 2"
-        const beforeNum = line.match(/^×?(\d+)\s+(.+)$/);      // "2 חלב"
+        const afterNum  = line.match(/^(.+?)\s+×?(\d+)\s*$/);
+        const beforeNum = line.match(/^×?(\d+)\s+(.+)$/);
         let name, qty;
         if (afterNum)  { name = afterNum[1].trim();  qty = parseInt(afterNum[2],  10); }
         else if (beforeNum) { qty = parseInt(beforeNum[1], 10); name = beforeNum[2].trim(); }
         else           { name = line; qty = 1; }
-        name = name.replace(/\s*\(.*\)\s*$/, '').trim(); // strip trailing parens
+        name = name.replace(/\s*\(.*\)\s*$/, '').trim();
         if (name.length < 2) return null;
         return { name, quantity: Math.max(1, qty || 1), category: this.guessCategory(name) };
       })
@@ -915,8 +1703,23 @@ class AppManager {
     const parsed = this.parseWhatsAppText(this.els.importTextarea.value);
     if (parsed.length === 0) { this.markInvalid(this.els.importTextarea); return; }
 
+    // If no active list, create one
+    if (!this.getActiveList()) {
+      const list = {
+        id: this.createId(), name: 'רשימה מיובאת',
+        icon: '📥', createdAt: Date.now(), isArchived: false,
+        products: []
+      };
+      this.workspace.lists.unshift(list);
+      this.activeListId = list.id;
+      this.currentView = 'list-detail';
+    }
+
     parsed.forEach(({ name, quantity, category }) => {
-      this.products.unshift(new Product(this.createId(), name, category, quantity));
+      const activeList = this.getActiveList();
+      if (activeList) {
+        activeList.products.unshift(new Product(this.createId(), name, category, quantity));
+      }
       this.addToHistory(name);
     });
     this._lastAllBought = false;
@@ -927,7 +1730,7 @@ class AppManager {
     this.showToast(`✅ יובאו ${parsed.length} מוצרים`);
   }
 
-  // ── Chapter 4: QR Camera Scanner ─────────────────────────────
+  // ── QR Camera Scanner (Ch4) ─────────────────────────────────────
 
   async startQrScan() {
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -998,14 +1801,13 @@ class AppManager {
     }
   }
 
-  // ── Chapter 5: App Lock ────────────────────────────────────────
+  // ── App Lock (Ch5) ──────────────────────────────────────────────
 
   async initLock() {
     const enabled = localStorage.getItem('smart_shop_lock_enabled');
     const hash    = localStorage.getItem('smart_shop_pin_hash');
 
     if (enabled === null) {
-      // First launch — lock ON, default PIN 1234
       this._lockEnabled = true;
       localStorage.setItem('smart_shop_lock_enabled', 'true');
       this._pinHash = await this.hashPin('1234');
@@ -1030,7 +1832,6 @@ class AppManager {
       const buf  = await crypto.subtle.digest('SHA-256', data);
       return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
     }
-    // Fallback for non-secure contexts (local file, HTTP)
     let h = 0;
     for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
     return 'f' + Math.abs(h).toString(16).padStart(8, '0');
@@ -1089,42 +1890,7 @@ class AppManager {
     }
   }
 
-  // ── Chapter 5: Settings ──────────────────────────────────────
-
-  openSettingsModal() {
-    this.els.lockToggle.checked = this._lockEnabled;
-    this.els.newPinInput.value  = '';
-    this.els.changePinSection.hidden = !this._lockEnabled;
-    this.els.settingsModal.hidden    = false;
-    document.body.style.overflow     = 'hidden';
-  }
-
-  closeSettingsModal() {
-    this.els.settingsModal.hidden = true;
-    document.body.style.overflow  = '';
-  }
-
-  handleLockToggle() {
-    this._lockEnabled = this.els.lockToggle.checked;
-    localStorage.setItem('smart_shop_lock_enabled', String(this._lockEnabled));
-    this.els.changePinSection.hidden = !this._lockEnabled;
-  }
-
-  async handleSavePin() {
-    const pin = this.els.newPinInput.value;
-    if (!/^\d{4}$/.test(pin)) {
-      this.markInvalid(this.els.newPinInput);
-      return;
-    }
-    this._pinHash = await this.hashPin(pin);
-    localStorage.setItem('smart_shop_pin_hash', this._pinHash);
-    localStorage.setItem('smart_shop_pin_custom', 'true');
-    if (this.els.lockHint) this.els.lockHint.hidden = true;
-    this.showToast('✅ קוד PIN עודכן');
-    this.els.newPinInput.value = '';
-  }
-
-  // ── Chapter 5: OTA + Service Worker ──────────────────────────
+  // ── OTA + Service Worker (Ch5) ──────────────────────────────────
 
   async registerServiceWorker() {
     if (!('serviceWorker' in navigator)) return;
@@ -1132,12 +1898,10 @@ class AppManager {
       const reg = await navigator.serviceWorker.register('service-worker.js');
       this._swReg = reg;
 
-      // Already-waiting worker from a previous visit
       if (reg.waiting && navigator.serviceWorker.controller) {
         this.showUpdateBanner();
       }
 
-      // New worker just installed
       reg.addEventListener('updatefound', () => {
         const sw = reg.installing;
         if (!sw) return;
@@ -1148,7 +1912,6 @@ class AppManager {
         });
       });
 
-      // When new SW activates → reload page
       let refreshing = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (refreshing) return;

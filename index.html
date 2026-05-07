@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#1f7a4d">
+  <meta name="theme-color" content="#1f7a4d" id="metaThemeColor">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Smart Shop">
@@ -15,19 +15,19 @@
 </head>
 <body>
 
-  <!-- ── מסך נעילה (מוצג כברירת מחדל) ─────────────── -->
+  <!-- ── מסך נעילה ─────────────────────────────────────── -->
   <div id="lockScreen" class="lock-screen" role="dialog" aria-modal="true" aria-label="נעילת אפליקציה">
     <div class="lock-inner" id="lockInner">
       <div class="lock-logo" aria-hidden="true">🔒</div>
       <h2 class="lock-title">Smart Shop</h2>
       <p class="lock-subtitle">הזן קוד PIN</p>
-      <div class="pin-dots" id="pinDots">
+      <div class="pin-dots" id="pinDots" dir="ltr">
         <span class="pin-dot"></span>
         <span class="pin-dot"></span>
         <span class="pin-dot"></span>
         <span class="pin-dot"></span>
       </div>
-      <div class="pin-pad" id="pinPad">
+      <div class="pin-pad" id="pinPad" dir="ltr">
         <button type="button" data-digit="1">1</button>
         <button type="button" data-digit="2">2</button>
         <button type="button" data-digit="3">3</button>
@@ -47,30 +47,30 @@
     </div>
   </div>
 
-  <!-- ── כותרת ─────────────────────────────────────── -->
+  <!-- ── כותרת ─────────────────────────────────────────── -->
   <header class="app-header">
     <div class="header-main">
-      <div>
-        <p class="eyebrow">רשימת קניות אישית</p>
-        <h1>Smart Shop <button class="settings-gear" id="openSettings" type="button" aria-label="הגדרות">⚙</button></h1>
+      <div class="header-title-area">
+        <button id="btnBack" class="back-btn" type="button" hidden aria-label="חזור">→</button>
+        <div>
+          <p class="eyebrow" id="headerEyebrow">רשימת קניות אישית</p>
+          <h1 id="headerTitle">Smart Shop</h1>
+        </div>
       </div>
-      <div class="header-actions">
-        <!-- כפתור מצב סופר -->
+      <div class="header-actions" id="headerActions" hidden>
         <button class="focus-toggle-btn" id="focusModeBtn" type="button" aria-label="מצב סופר" title="מצב סופר">
           🛒
         </button>
-        <!-- כפתור שתף/יבא -->
         <button class="icon-button share-icon-btn" id="openShareModal" type="button" aria-label="שתף ויבא">
           <span aria-hidden="true">⬆</span>
         </button>
-        <!-- כפתור הוסף מוצר -->
         <button class="icon-button" id="openProductModal" type="button" aria-label="הוסף מוצר">
           <span aria-hidden="true">+</span>
         </button>
       </div>
     </div>
 
-    <!-- רצועת סיכום (נראית רק כשיש פריטים) -->
+    <!-- רצועת סיכום -->
     <div class="summary-strip" id="summaryStrip" hidden>
       <span id="summaryTotal">0 מוצרים</span>
       <span id="summaryBought">0 נקנו</span>
@@ -79,30 +79,121 @@
     </div>
   </header>
 
-  <!-- ── תוכן ראשי ──────────────────────────────────── -->
+  <!-- ── תוכן ראשי ────────────────────────────────────── -->
   <main class="app-shell">
 
-    <!-- מצב ריק -->
-    <section class="empty-state" id="emptyState">
-      <div class="empty-icon" aria-hidden="true">🛒</div>
-      <h2>הרשימה ריקה</h2>
-      <p>הוסף מוצר ראשון כדי להתחיל לבנות את הקנייה.</p>
-      <button class="primary-button" id="emptyAddButton" type="button">הוסף מוצר</button>
+    <!-- View: דשבורד רשימות -->
+    <section class="view-section" id="viewLists">
+      <div class="lists-grid" id="listsGrid"></div>
+      <div class="empty-state" id="emptyDashboard">
+        <div class="empty-icon" aria-hidden="true">📋</div>
+        <h2>אין רשימות עדיין</h2>
+        <p>צור רשימה חדשה כדי להתחיל.</p>
+        <button class="primary-button" id="emptyNewListBtn" type="button">+ רשימה חדשה</button>
+      </div>
     </section>
 
-    <!-- רשימת הקטגוריות -->
-    <section class="categories" id="categoriesContainer" aria-live="polite"></section>
+    <!-- View: פרטי רשימה -->
+    <section class="view-section" id="viewListDetail" hidden>
+      <!-- הצעות חכמות (Predictive) -->
+      <section class="predictive-section" id="predictiveSection" hidden>
+        <header class="predictive-header">
+          <span>🧠 הגיע הזמן לקנות?</span>
+          <button id="togglePredictive" class="predictive-toggle" type="button">▾</button>
+        </header>
+        <div class="predictive-list" id="predictiveList"></div>
+      </section>
+
+      <!-- מצב ריק -->
+      <section class="empty-state" id="emptyState" hidden>
+        <div class="empty-icon" aria-hidden="true">🛒</div>
+        <h2>הרשימה ריקה</h2>
+        <p>הוסף מוצר ראשון כדי להתחיל לבנות את הקנייה.</p>
+        <button class="primary-button" id="emptyAddButton" type="button">הוסף מוצר</button>
+      </section>
+
+      <!-- רשימת הקטגוריות -->
+      <section class="categories" id="categoriesContainer" aria-live="polite"></section>
+
+      <!-- כפתור ארכב -->
+      <button class="archive-fab" id="archiveListBtn" type="button" hidden>
+        📦 סיים וארכב
+      </button>
+    </section>
+
+    <!-- View: תבניות -->
+    <section class="view-section" id="viewTemplates" hidden>
+      <div class="templates-grid" id="templatesGrid"></div>
+    </section>
+
+    <!-- View: הגדרות -->
+    <section class="view-section" id="viewSettings" hidden>
+      <div class="settings-page">
+
+        <!-- ערכת צבעים -->
+        <div class="setting-row setting-row-col">
+          <span class="setting-label">🎨 ערכת צבעים</span>
+          <div class="theme-picker" id="themePicker"></div>
+        </div>
+
+        <!-- נעילת PIN -->
+        <div class="setting-row">
+          <span class="setting-label">🔒 נעילת אפליקציה (PIN)</span>
+          <label class="toggle">
+            <input type="checkbox" id="lockToggle">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        <div class="setting-section" id="changePinSection">
+          <label class="field">
+            <span>קוד PIN חדש (4 ספרות)</span>
+            <input id="newPinInput" type="password" inputmode="numeric"
+                   maxlength="4" pattern="\d{4}" placeholder="····" autocomplete="off">
+          </label>
+          <button class="primary-button" id="savePinBtn" type="button">💾 שמור קוד חדש</button>
+        </div>
+
+        <!-- ארכיון -->
+        <div class="setting-row">
+          <span class="setting-label">📦 ארכיון רשימות</span>
+          <button class="secondary-button small" id="openArchiveBtn" type="button">צפה</button>
+        </div>
+
+        <!-- נקה הכל -->
+        <div class="setting-section setting-danger">
+          <button class="danger-button" id="clearAllBtn" type="button">🗑 נקה הכל</button>
+          <p class="setting-hint">מחיקת כל הנתונים לא ניתנת לשחזור.</p>
+        </div>
+
+      </div>
+    </section>
 
   </main>
 
-  <!-- ── כפתור WhatsApp צף ─────────────────────────── -->
+  <!-- ── ניווט תחתון ───────────────────────────────────── -->
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="nav-btn active" data-tab="lists" type="button">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">הרשימות</span>
+    </button>
+    <button class="nav-btn" data-tab="templates" type="button">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">תבניות</span>
+    </button>
+    <button class="nav-btn" data-tab="settings" type="button">
+      <span class="nav-icon">⚙️</span>
+      <span class="nav-label">הגדרות</span>
+    </button>
+  </nav>
+
+  <!-- ── כפתור WhatsApp צף ─────────────────────────────── -->
   <button class="whatsapp-fab" id="shareWhatsAppButton" type="button"
           aria-label="שתף רשימת קניות בוואטסאפ" hidden>
     <span aria-hidden="true">↗</span>
     <span>שלח לוואטסאפ</span>
   </button>
 
-  <!-- ── מודאל: הוספת מוצר ──────────────────────────── -->
+  <!-- ── מודאל: הוספת מוצר ──────────────────────────────── -->
   <div class="modal-overlay" id="productModal" role="presentation" hidden>
     <section class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <div class="modal-handle" aria-hidden="true"></div>
@@ -113,11 +204,14 @@
 
       <form class="product-form" id="productForm">
 
-        <!-- שם (עם השלמה אוטומטית) -->
+        <!-- שם (עם השלמה אוטומטית + כפתור קול) -->
         <label class="field">
           <span>שם המוצר</span>
-          <input id="productName" name="name" type="text" autocomplete="off"
-                 list="nameHistory" placeholder="לדוגמה: חלב, לחם, עגבניות" required>
+          <div class="name-input-row">
+            <input id="productName" name="name" type="text" autocomplete="off"
+                   list="nameHistory" placeholder="לדוגמה: חלב, לחם, עגבניות" required>
+            <button type="button" id="voiceBtn" class="voice-btn" aria-label="הקלטה קולית" title="הקלטה קולית">🎙️</button>
+          </div>
           <datalist id="nameHistory"></datalist>
         </label>
 
@@ -127,7 +221,7 @@
           <select id="productCategory" name="category" required></select>
         </label>
 
-        <!-- כמות + יחידה (שורה אחת) -->
+        <!-- כמות + יחידה -->
         <div class="field-row">
           <label class="field">
             <span>כמות</span>
@@ -148,7 +242,7 @@
           </label>
         </div>
 
-        <!-- מחיר + עדיפות (שורה אחת) -->
+        <!-- מחיר + עדיפות -->
         <div class="field-row">
           <label class="field">
             <span>מחיר משוער (₪)</span>
@@ -226,7 +320,50 @@
     </section>
   </div>
 
-  <!-- ── כרזת קישור נכנס ──────────────────────────────────── -->
+  <!-- ── מודאל: רשימה חדשה ─────────────────────────────── -->
+  <div class="modal-overlay" id="newListModal" role="presentation" hidden>
+    <section class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="newListTitle">
+      <div class="modal-handle" aria-hidden="true"></div>
+      <header class="modal-header">
+        <h2 id="newListTitle">רשימה חדשה</h2>
+        <button class="close-button" id="closeNewListModal" type="button" aria-label="סגור">×</button>
+      </header>
+      <div class="new-list-content">
+        <label class="field">
+          <span>שם הרשימה</span>
+          <input id="newListName" type="text" placeholder="לדוגמה: קניות שבועיות" required>
+        </label>
+        <div class="field">
+          <span>אייקון</span>
+          <div class="icon-picker" id="iconPicker">
+            <button type="button" class="icon-btn selected" data-icon="🛒">🛒</button>
+            <button type="button" class="icon-btn" data-icon="🏠">🏠</button>
+            <button type="button" class="icon-btn" data-icon="🎉">🎉</button>
+            <button type="button" class="icon-btn" data-icon="🥗">🥗</button>
+            <button type="button" class="icon-btn" data-icon="🍕">🍕</button>
+            <button type="button" class="icon-btn" data-icon="🎂">🎂</button>
+            <button type="button" class="icon-btn" data-icon="💊">💊</button>
+            <button type="button" class="icon-btn" data-icon="🏢">🏢</button>
+          </div>
+        </div>
+        <button class="primary-button" id="createListBtn" type="button" style="width:100%">צור רשימה</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- ── מודאל: ארכיון ─────────────────────────────────── -->
+  <div class="modal-overlay" id="archiveModal" role="presentation" hidden>
+    <section class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="archiveTitle">
+      <div class="modal-handle" aria-hidden="true"></div>
+      <header class="modal-header">
+        <h2 id="archiveTitle">📦 ארכיון</h2>
+        <button class="close-button" id="closeArchiveModal" type="button" aria-label="סגור">×</button>
+      </header>
+      <div class="archive-content" id="archiveContent"></div>
+    </section>
+  </div>
+
+  <!-- ── כרזת קישור נכנס ──────────────────────────────── -->
   <div class="incoming-banner" id="incomingBanner" hidden>
     <div class="incoming-inner">
       <span>📥 <strong>קיבלת רשימת קניות!</strong><span id="incomingCount"></span></span>
@@ -237,41 +374,13 @@
     </div>
   </div>
 
-  <!-- ── מודאל: הגדרות ─────────────────────────────────── -->
-  <div class="modal-overlay" id="settingsModal" role="presentation" hidden>
-    <section class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-      <div class="modal-handle" aria-hidden="true"></div>
-      <header class="modal-header">
-        <h2 id="settingsTitle">הגדרות</h2>
-        <button class="close-button" id="closeSettings" type="button" aria-label="סגור">×</button>
-      </header>
-      <div class="settings-content">
-        <div class="setting-row">
-          <span class="setting-label">🔒 נעילת אפליקציה (PIN)</span>
-          <label class="toggle">
-            <input type="checkbox" id="lockToggle">
-            <span class="toggle-track"></span>
-          </label>
-        </div>
-        <div class="setting-section" id="changePinSection">
-          <label class="field">
-            <span>קוד PIN חדש (4 ספרות)</span>
-            <input id="newPinInput" type="password" inputmode="numeric"
-                   maxlength="4" pattern="\d{4}" placeholder="····" autocomplete="off">
-          </label>
-          <button class="primary-button" id="savePinBtn" type="button">💾 שמור קוד חדש</button>
-        </div>
-      </div>
-    </section>
-  </div>
-
-  <!-- ── באנר עדכון גרסה ────────────────────────────────── -->
+  <!-- ── באנר עדכון גרסה ──────────────────────────────── -->
   <div class="update-toast" id="updateToast" hidden>
     <span>🔄 גרסה חדשה זמינה!</span>
     <button id="updateBtn" type="button">רענן כעת</button>
   </div>
 
-  <!-- ── Toast: ביטול מחיקה ────────────────────────────── -->
+  <!-- ── Toast: ביטול מחיקה ──────────────────────────────── -->
   <div class="undo-toast" id="undoToast" hidden>
     <span id="undoMessage">נמחק</span>
     <button id="undoBtn" type="button">↩ בטל</button>

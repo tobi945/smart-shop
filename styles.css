@@ -7,6 +7,7 @@
   --line: #dfe7df;
   --primary: #1f7a4d;
   --primary-strong: #135c37;
+  --primary-light: #2ea862;
   --accent: #f0b429;
   --danger: #c24132;
   --whatsapp: #25d366;
@@ -28,7 +29,7 @@ html {
 body {
   min-height: 100%;
   margin: 0;
-  padding: 0 0 96px;
+  padding: 0 0 140px;
   background:
     radial-gradient(circle at top right, rgba(240, 180, 41, 0.16), transparent 28rem),
     var(--bg);
@@ -51,6 +52,8 @@ button {
   display: none !important;
 }
 
+/* ── Header ────────────────────────────────────────────────────── */
+
 .app-header {
   position: sticky;
   top: 0;
@@ -69,6 +72,28 @@ button {
   margin: 0 auto;
   padding: 18px 18px 14px;
 }
+
+.header-title-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.back-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 1.3rem;
+  font-weight: 700;
+  transition: background 0.15s;
+}
+
+.back-btn:active { background: rgba(255, 255, 255, 0.35); }
 
 .eyebrow {
   margin: 0 0 3px;
@@ -105,9 +130,15 @@ h1 {
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .summary-strip {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 1px;
   width: min(720px, 100%);
   margin: 0 auto;
@@ -123,11 +154,20 @@ h1 {
   background: rgba(0, 0, 0, 0.06);
 }
 
+.budget-cell {
+  font-weight: 800;
+  color: var(--accent);
+}
+
+/* ── Main Shell ────────────────────────────────────────────────── */
+
 .app-shell {
   width: min(720px, 100%);
   margin: 0 auto;
   padding: 16px;
 }
+
+/* ── Empty State ───────────────────────────────────────────────── */
 
 .empty-state {
   display: grid;
@@ -152,6 +192,8 @@ h1 {
   color: var(--text);
   font-size: 1.25rem;
 }
+
+/* ── Categories & Products ─────────────────────────────────────── */
 
 .categories {
   display: grid;
@@ -287,6 +329,8 @@ h1 {
   color: var(--danger);
 }
 
+/* ── Buttons ───────────────────────────────────────────────────── */
+
 .primary-button,
 .secondary-button {
   min-height: var(--tap);
@@ -306,10 +350,35 @@ h1 {
   color: var(--text);
 }
 
+.primary-button.small,
+.secondary-button.small {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 0.88rem;
+}
+
+.secondary-button.small {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+.danger-button {
+  min-height: var(--tap);
+  width: 100%;
+  border: 0;
+  border-radius: var(--radius);
+  padding: 0 18px;
+  background: var(--danger);
+  color: #fff;
+  font-weight: 800;
+}
+
+/* ── WhatsApp FAB ──────────────────────────────────────────────── */
+
 .whatsapp-fab {
   position: fixed;
   right: 16px;
-  bottom: 18px;
+  bottom: 76px;
   z-index: 15;
   display: inline-flex;
   align-items: center;
@@ -334,6 +403,8 @@ h1 {
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.42);
 }
+
+/* ── Modals ─────────────────────────────────────────────────────── */
 
 .modal-overlay {
   position: fixed;
@@ -379,6 +450,8 @@ h1 {
   font-size: 1.45rem;
 }
 
+/* ── Product Form ──────────────────────────────────────────────── */
+
 .product-form {
   display: grid;
   gap: 16px;
@@ -418,95 +491,12 @@ h1 {
   padding-top: 4px;
 }
 
-.shake {
-  animation: shake 0.28s ease;
-}
-
-@keyframes shake {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-
-  33% {
-    transform: translateX(-5px);
-  }
-
-  66% {
-    transform: translateX(5px);
-  }
-}
-
-@media (min-width: 620px) {
-  body {
-    padding-bottom: 112px;
-  }
-
-  .app-shell {
-    padding-top: 22px;
-  }
-
-  .modal-overlay {
-    align-items: center;
-    padding: 20px;
-  }
-
-  .modal-sheet {
-    border-radius: var(--radius-lg);
-  }
-
-  .whatsapp-fab {
-    right: calc(50% - 344px);
-  }
-}
-
-/* ================================================================
-   פרק 2: Shopping Engine — סגנונות חדשים
-   ================================================================ */
-
-/* ── כותרת: כפתורי פעולה ──────────────────────────────────────── */
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-/* ── כפתור מצב סופר ───────────────────────────────────────────── */
-.focus-toggle-btn {
-  display: grid;
-  place-items: center;
-  width: var(--tap);
-  height: var(--tap);
-  border: 2px solid rgba(255,255,255,0.35);
-  border-radius: 50%;
-  background: rgba(255,255,255,0.15);
-  font-size: 1.35rem;
-  transition: background 0.18s, border-color 0.18s;
-}
-
-.focus-toggle-btn.focus-active {
-  background: rgba(255,255,255,0.9);
-  border-color: rgba(255,255,255,0.9);
-}
-
-/* ── תקציב ברצועת הסיכום ──────────────────────────────────────── */
-.summary-strip {
-  grid-template-columns: repeat(4, 1fr); /* override: 3 → 4 */
-}
-
-.budget-cell {
-  font-weight: 800;
-  color: var(--accent);
-}
-
-/* ── שדה-שורה (כמות+יחידה / מחיר+עדיפות) ───────────────────── */
 .field-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
-/* ── כפתור עדיפות ─────────────────────────────────────────────── */
 .priority-field {
   display: grid;
   gap: 7px;
@@ -529,18 +519,15 @@ h1 {
   color: #9a6000;
 }
 
-/* ── כוכב עדיפות בפריט ───────────────────────────────────────── */
 .priority-star {
   font-size: 0.9em;
   margin-left: 4px;
 }
 
-/* ── פריט בעדיפות גבוהה ──────────────────────────────────────── */
 .product-item.is-priority {
   background: #fffdf5;
 }
 
-/* ── תג מחיר ──────────────────────────────────────────────────── */
 .price-tag {
   display: inline-block;
   margin-right: 6px;
@@ -557,11 +544,74 @@ h1 {
   color: #aaa;
 }
 
-/* ================================================================
-   מצב סופר (Focus Mode)
-   ================================================================ */
+/* ── Name Input Row (with voice button) ────────────────────────── */
 
-/* כרזת מצב סופר */
+.name-input-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.name-input-row input {
+  min-height: 52px;
+}
+
+.voice-btn {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fbfcfb;
+  font-size: 1.3rem;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.voice-btn:active,
+.voice-btn.voice-active {
+  background: #fee2e2;
+  border-color: var(--danger);
+  animation: voicePulse 0.8s ease-in-out infinite;
+}
+
+@keyframes voicePulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); }
+}
+
+/* ── Shake Animation ───────────────────────────────────────────── */
+
+.shake {
+  animation: shake 0.28s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  33%      { transform: translateX(-5px); }
+  66%      { transform: translateX(5px); }
+}
+
+/* ── Focus Mode ────────────────────────────────────────────────── */
+
+.focus-toggle-btn {
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  border: 2px solid rgba(255,255,255,0.35);
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  font-size: 1.35rem;
+  transition: background 0.18s, border-color 0.18s;
+}
+
+.focus-toggle-btn.focus-active {
+  background: rgba(255,255,255,0.9);
+  border-color: rgba(255,255,255,0.9);
+}
+
 body.focus-mode::before {
   content: '🛒 מצב סופר פעיל';
   display: block;
@@ -574,44 +624,15 @@ body.focus-mode::before {
   letter-spacing: 0.04em;
 }
 
-/* פריטים גדולים יותר */
-body.focus-mode .product-item {
-  min-height: 76px;
-}
+body.focus-mode .product-item { min-height: 76px; }
+body.focus-mode .product-checkbox { width: 30px; height: 30px; }
+body.focus-mode .product-name { font-size: 1.12rem; }
+body.focus-mode .delete-button { visibility: hidden; pointer-events: none; }
+body.focus-mode .product-item.is-bought { opacity: 0.55; }
+body.focus-mode .whatsapp-fab { min-height: 66px; font-size: 1.05rem; }
 
-/* צ'קבוקס גדול יותר */
-body.focus-mode .product-checkbox {
-  width: 30px;
-  height: 30px;
-}
+/* ── Swipe ─────────────────────────────────────────────────────── */
 
-/* שם מוצר גדול יותר */
-body.focus-mode .product-name {
-  font-size: 1.12rem;
-}
-
-/* הסתרת כפתורי מחיקה (מניעת לחיצה בטעות בסופר) */
-body.focus-mode .delete-button {
-  visibility: hidden;
-  pointer-events: none;
-}
-
-/* הדגשת פריטים שנרכשו */
-body.focus-mode .product-item.is-bought {
-  opacity: 0.55;
-}
-
-/* FAB בולט יותר */
-body.focus-mode .whatsapp-fab {
-  min-height: 66px;
-  font-size: 1.05rem;
-}
-
-/* ================================================================
-   פרק 3: Premium UX — Swipe · Undo Toast · Confetti · Dark Mode
-   ================================================================ */
-
-/* ── עטיפה פנימית לסוויפ ──────────────────────────────────────── */
 .product-inner {
   display: grid;
   grid-template-columns: 1fr var(--tap);
@@ -623,46 +644,29 @@ body.focus-mode .whatsapp-fab {
   z-index: 1;
 }
 
-/* ── רקע סוויפ ימינה (סמן כנאסף) ────────────────────────────── */
-.product-item.swipe-right-active {
-  background: #22c55e;
-}
-
+.product-item.swipe-right-active { background: #22c55e; }
 .product-item.swipe-right-active::before {
   content: '✓ נאסף';
   position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #fff;
-  font-weight: 800;
-  font-size: 0.92rem;
-  pointer-events: none;
-  z-index: 0;
+  right: 16px; top: 50%; transform: translateY(-50%);
+  color: #fff; font-weight: 800; font-size: 0.92rem;
+  pointer-events: none; z-index: 0;
 }
 
-/* ── רקע סוויפ שמאלה (מחיקה) ─────────────────────────────────── */
-.product-item.swipe-left-active {
-  background: #ef4444;
-}
-
+.product-item.swipe-left-active { background: #ef4444; }
 .product-item.swipe-left-active::after {
   content: '🗑 מחיקה';
   position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #fff;
-  font-weight: 800;
-  font-size: 0.92rem;
-  pointer-events: none;
-  z-index: 0;
+  left: 16px; top: 50%; transform: translateY(-50%);
+  color: #fff; font-weight: 800; font-size: 0.92rem;
+  pointer-events: none; z-index: 0;
 }
 
-/* ── Undo Toast ───────────────────────────────────────────────── */
+/* ── Undo Toast ────────────────────────────────────────────────── */
+
 .undo-toast {
   position: fixed;
-  bottom: 90px;
+  bottom: 150px;
   left: 50%;
   transform: translateX(-50%) translateY(20px);
   z-index: 50;
@@ -701,7 +705,8 @@ body.focus-mode .whatsapp-fab {
   cursor: pointer;
 }
 
-/* ── קונפטי ───────────────────────────────────────────────────── */
+/* ── Confetti ──────────────────────────────────────────────────── */
+
 .confetti-container {
   position: fixed;
   inset: 0;
@@ -729,135 +734,17 @@ body.focus-mode .whatsapp-fab {
   100% { transform: translateY(100vh)  rotate(var(--spin, 360deg)); opacity: 0; }
 }
 
-/* ── Dark Mode ────────────────────────────────────────────────── */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg:           #111915;
-    --surface:      #1a2420;
-    --surface-soft: #1f2d28;
-    --text:         #e8f0ea;
-    --muted:        #8aad94;
-    --line:         #2a3d32;
-    --primary:      #2ea862;
-    --primary-strong: #1f7a4d;
-    --shadow:       0 16px 40px rgba(0, 0, 0, 0.45);
-  }
-
-  body {
-    background:
-      radial-gradient(circle at top right, rgba(240, 180, 41, 0.08), transparent 28rem),
-      var(--bg);
-  }
-
-  .app-header {
-    background: linear-gradient(135deg, #0d4d2c, #1a6640);
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
-  }
-
-  .icon-button {
-    background: #1f2d28;
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
-  }
-
-  .product-item {
-    background: var(--surface);
-  }
-
-  .product-item.is-bought {
-    background: #151e19;
-  }
-
-  .product-item.is-priority {
-    background: #1e2318;
-  }
-
-  .field input,
-  .field select {
-    background: #1f2d28;
-    color: var(--text);
-    border-color: var(--line);
-  }
-
-  .priority-btn {
-    background: #1f2d28;
-    color: var(--muted);
-    border-color: var(--line);
-  }
-
-  .priority-btn[data-priority="1"] {
-    background: #2a2310;
-    border-color: var(--accent);
-    color: #d4a030;
-  }
-
-  .modal-sheet {
-    background: #1a2420;
-  }
-
-  .close-button {
-    background: #1f2d28;
-  }
-
-  .secondary-button {
-    background: #1f2d28;
-    color: var(--text);
-  }
-
-  .category-section {
-    background: var(--surface);
-    border-color: var(--line);
-  }
-
-  .category-header {
-    background: var(--surface-soft);
-    border-color: var(--line);
-  }
-
-  .category-icon {
-    background: #253429;
-  }
-
-  .category-count {
-    background: #253429;
-    color: var(--primary);
-  }
-
-  .price-tag {
-    background: #1c3327;
-    color: #5dba84;
-  }
-
-  .product-item.is-bought .price-tag {
-    background: #1e2420;
-    color: #4a5e50;
-  }
-
-  .undo-toast {
-    background: #e8f0ea;
-    color: #18211c;
-  }
-
-  .undo-toast #undoBtn {
-    background: var(--primary-strong);
-  }
-}
-
 /* ================================================================
-   פרק 4: Magic Link · QR Code · WhatsApp Text Import
+   Share Modal (Ch4)
    ================================================================ */
 
-/* ── כפתור שתף בכותרת ────────────────────────────────────────── */
-.share-icon-btn {
-  font-size: 1.35rem;
-}
+.share-icon-btn { font-size: 1.35rem; }
 
-/* ── גלילה במודאל שיתוף ──────────────────────────────────────── */
 .share-modal-sheet {
   max-height: 92dvh;
   overflow-y: auto;
 }
 
-/* ── לשוניות (Tabs) ──────────────────────────────────────────── */
 .share-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -880,14 +767,12 @@ body.focus-mode .whatsapp-fab {
   border-bottom-color: var(--primary);
 }
 
-/* ── פאנל לשונית ──────────────────────────────────────────────── */
 .share-panel {
   display: grid;
   gap: 14px;
   padding: 16px 18px 22px;
 }
 
-/* ── תיבת קישור ───────────────────────────────────────────────── */
 .link-box {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -925,14 +810,12 @@ body.focus-mode .whatsapp-fab {
 
 .copy-btn:active { background: #d4edda; }
 
-/* ── כפתורי פעולה שיתוף ───────────────────────────────────────── */
 .share-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
 
-/* ── אזור QR ──────────────────────────────────────────────────── */
 .qr-container {
   display: flex;
   justify-content: center;
@@ -956,7 +839,6 @@ body.focus-mode .whatsapp-fab {
   margin: 0;
 }
 
-/* ── טקסטריה ייבוא ────────────────────────────────────────────── */
 .import-textarea {
   width: 100%;
   min-height: 120px;
@@ -984,7 +866,6 @@ body.focus-mode .whatsapp-fab {
   margin: -6px 0 0;
 }
 
-/* ── תצוגה מקדימה ייבוא ──────────────────────────────────────── */
 .import-preview {
   background: var(--surface-soft);
   border-radius: var(--radius);
@@ -1018,12 +899,106 @@ body.focus-mode .whatsapp-fab {
 
 .import-go-btn { width: 100%; }
 
-/* ── כרזת קישור נכנס ─────────────────────────────────────────── */
+.or-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.or-divider::before,
+.or-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.qr-scanner-area { display: grid; gap: 10px; }
+.scan-qr-btn { width: 100%; }
+
+.qr-scan-wrapper {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #000;
+  aspect-ratio: 1;
+  max-height: 340px;
+}
+
+.qr-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.qr-aim-box {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 58%;
+  aspect-ratio: 1;
+  border: 3px solid var(--primary);
+  border-radius: 10px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.42);
+}
+
+.qr-aim-box::before,
+.qr-aim-box::after {
+  content: '';
+  position: absolute;
+  width: 22px; height: 22px;
+  border-color: #fff;
+  border-style: solid;
+}
+
+.qr-aim-box::before {
+  top: -3px; right: -3px;
+  border-width: 3px 3px 0 0;
+  border-radius: 0 6px 0 0;
+}
+
+.qr-aim-box::after {
+  bottom: -3px; left: -3px;
+  border-width: 0 0 3px 3px;
+  border-radius: 0 0 6px 0;
+}
+
+.qr-hint-text {
+  position: absolute;
+  bottom: 46px; left: 0; right: 0;
+  text-align: center;
+  color: #fff;
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+  margin: 0;
+  pointer-events: none;
+}
+
+.stop-scan-btn {
+  position: absolute;
+  bottom: 10px; left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 22px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  color: #18211c;
+  font-weight: 800;
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+
+/* ── Incoming Banner ───────────────────────────────────────────── */
+
 .incoming-banner {
   position: fixed;
-  bottom: 90px;
-  left: 16px;
-  right: 16px;
+  bottom: 150px;
+  left: 16px; right: 16px;
   z-index: 45;
   background: var(--primary-strong);
   color: #fff;
@@ -1052,140 +1027,10 @@ body.focus-mode .whatsapp-fab {
   flex-shrink: 0;
 }
 
-.primary-button.small,
-.secondary-button.small {
-  min-height: 36px;
-  padding: 0 14px;
-  font-size: 0.88rem;
-}
-
-.secondary-button.small {
-  background: rgba(255, 255, 255, 0.22);
-  color: #fff;
-}
-
-/* ── מפריד "או" ───────────────────────────────────────────────── */
-.or-divider {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--muted);
-  font-size: 0.82rem;
-  font-weight: 700;
-}
-
-.or-divider::before,
-.or-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--line);
-}
-
-/* ── אזור סריקת QR ────────────────────────────────────────────── */
-.qr-scanner-area {
-  display: grid;
-  gap: 10px;
-}
-
-.scan-qr-btn { width: 100%; }
-
-.qr-scan-wrapper {
-  position: relative;
-  border-radius: var(--radius);
-  overflow: hidden;
-  background: #000;
-  aspect-ratio: 1;
-  max-height: 340px;
-}
-
-.qr-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-/* מסגרת כוונון */
-.qr-aim-box {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 58%;
-  aspect-ratio: 1;
-  border: 3px solid var(--primary);
-  border-radius: 10px;
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.42);
-}
-
-/* קרנות מסגרת */
-.qr-aim-box::before,
-.qr-aim-box::after {
-  content: '';
-  position: absolute;
-  width: 22px;
-  height: 22px;
-  border-color: #fff;
-  border-style: solid;
-}
-
-.qr-aim-box::before {
-  top: -3px; right: -3px;
-  border-width: 3px 3px 0 0;
-  border-radius: 0 6px 0 0;
-}
-
-.qr-aim-box::after {
-  bottom: -3px; left: -3px;
-  border-width: 0 0 3px 3px;
-  border-radius: 0 0 6px 0;
-}
-
-.qr-hint-text {
-  position: absolute;
-  bottom: 46px;
-  left: 0;
-  right: 0;
-  text-align: center;
-  color: #fff;
-  font-size: 0.84rem;
-  font-weight: 700;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
-  margin: 0;
-  pointer-events: none;
-}
-
-.stop-scan-btn {
-  position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 6px 22px;
-  border: 0;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.88);
-  color: #18211c;
-  font-weight: 800;
-  font-size: 0.88rem;
-  white-space: nowrap;
-}
-
-/* Dark mode — Chapter 4 additions */
-@media (prefers-color-scheme: dark) {
-  .link-input     { background: #1a2420; color: var(--muted); }
-  .copy-btn       { background: #1f2d28; color: var(--text);  }
-  .import-textarea { background: #1f2d28; color: var(--text);  }
-  .qr-container   { background: #fff; }   /* QR must be on white */
-  .preview-chip   { background: #1f2d28; border-color: var(--line); }
-  .copy-btn:active { background: #1c3327; }
-}
-
 /* ================================================================
-   פרק 5: App Lock · Settings · OTA · Splash
+   Lock Screen (Ch5)
    ================================================================ */
 
-/* ── מסך נעילה ────────────────────────────────────────────────── */
 .lock-screen {
   position: fixed;
   inset: 0;
@@ -1193,7 +1038,7 @@ body.focus-mode .whatsapp-fab {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, #0d4d2c 0%, #1f7a4d 45%, #2ea862 100%);
+  background: linear-gradient(145deg, var(--primary-strong) 0%, var(--primary) 45%, var(--primary-light) 100%);
   transition: opacity 0.35s, transform 0.35s;
 }
 
@@ -1235,7 +1080,6 @@ body.focus-mode .whatsapp-fab {
   font-size: 0.92rem;
 }
 
-/* נקודות PIN */
 .pin-dots {
   display: flex;
   justify-content: center;
@@ -1257,7 +1101,6 @@ body.focus-mode .whatsapp-fab {
   transform: scale(1.15);
 }
 
-/* לוח מספרים */
 .pin-pad {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1283,13 +1126,8 @@ body.focus-mode .whatsapp-fab {
   -webkit-tap-highlight-color: transparent;
 }
 
-.pin-pad button:active {
-  background: rgba(255, 255, 255, 0.28);
-}
-
-.pin-pad-empty {
-  visibility: hidden;
-}
+.pin-pad button:active { background: rgba(255, 255, 255, 0.28); }
+.pin-pad-empty { visibility: hidden; }
 
 .lock-error {
   color: #ff6b6b;
@@ -1316,26 +1154,273 @@ body.focus-mode .whatsapp-fab {
   text-decoration: underline;
 }
 
-/* ── כפתור הגדרות (גלגל שיניים) ──────────────────────────────── */
-.settings-gear {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 0.82rem;
-  vertical-align: middle;
-  padding: 2px 4px;
-  border-radius: 50%;
-  transition: color 0.15s;
+/* ================================================================
+   Bottom Navigation
+   ================================================================ */
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 25;
+  display: flex;
+  height: 60px;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
 }
 
-.settings-gear:active { color: #fff; }
+.nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 0;
+  border-top: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 0;
+  transition: color 0.15s, border-color 0.15s;
+}
 
-/* ── הגדרות — תוכן ───────────────────────────────────────────── */
-.settings-content {
-  padding: 6px 18px 22px;
+.nav-icon { font-size: 1.25rem; }
+
+.nav-btn.active {
+  color: var(--primary);
+  border-top-color: var(--primary);
+}
+
+/* ================================================================
+   Lists Dashboard
+   ================================================================ */
+
+.lists-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.list-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: 0 4px 14px rgba(35, 50, 40, 0.06);
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+
+.list-card:active { box-shadow: 0 2px 8px rgba(35, 50, 40, 0.12); }
+
+.list-card-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+
+.list-card-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--surface-soft);
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.list-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.list-card-name {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list-card-status {
+  margin: 3px 0 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.list-card-delete {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #bbb;
+  font-size: 1.2rem;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.list-card-delete:active {
+  background: #fee8e4;
+  color: var(--danger);
+}
+
+.list-card-progress {
+  height: 4px;
+  background: var(--surface-soft);
+}
+
+.list-card-bar {
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.3s ease;
+  border-radius: 0 0 4px 4px;
+}
+
+/* New List card button */
+
+.new-list-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 22px 16px;
+  border: 2px dashed var(--line);
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--primary);
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  width: 100%;
+}
+
+.new-list-card:active {
+  background: var(--surface-soft);
+  border-color: var(--primary);
+}
+
+.new-list-card-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--surface-soft);
+  font-size: 1.5rem;
+}
+
+/* ================================================================
+   New List Modal
+   ================================================================ */
+
+.new-list-content {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+.icon-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.icon-btn {
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  font-size: 1.3rem;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.icon-btn.selected {
+  border-color: var(--primary);
+  background: #e6f4ec;
+}
+
+/* ================================================================
+   Templates
+   ================================================================ */
+
+.templates-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.template-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: 0 4px 14px rgba(35, 50, 40, 0.06);
+  overflow: hidden;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.template-card-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.template-card-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--surface-soft);
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.template-card-name {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.template-card-count {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.template-items {
+  margin: 0;
+  padding: 0 20px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.7;
+}
+
+.template-apply-btn { width: 100%; }
+
+/* ================================================================
+   Settings View
+   ================================================================ */
+
+.settings-page {
+  display: grid;
+  gap: 0;
 }
 
 .setting-row {
@@ -1344,6 +1429,12 @@ body.focus-mode .whatsapp-fab {
   justify-content: space-between;
   padding: 16px 0;
   border-bottom: 1px solid var(--line);
+}
+
+.setting-row-col {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
 }
 
 .setting-label {
@@ -1357,7 +1448,50 @@ body.focus-mode .whatsapp-fab {
   padding: 16px 0 0;
 }
 
+.setting-danger {
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  margin-top: 8px;
+}
+
+.setting-hint {
+  color: var(--muted);
+  font-size: 0.82rem;
+  margin: 0;
+}
+
+/* Theme Picker */
+
+.theme-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.theme-swatch {
+  width: 44px;
+  height: 44px;
+  border: 3px solid transparent;
+  border-radius: 50%;
+  background: var(--swatch);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.theme-swatch.selected {
+  border-color: var(--text);
+  transform: scale(1.15);
+}
+
+.theme-swatch:active { transform: scale(0.95); }
+
 /* Toggle switch */
+
 .toggle {
   position: relative;
   display: inline-block;
@@ -1385,25 +1519,208 @@ body.focus-mode .whatsapp-fab {
 .toggle-track::before {
   content: '';
   position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 24px;
-  height: 24px;
+  top: 2px; left: 2px;
+  width: 24px; height: 24px;
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   transition: transform 0.2s;
 }
 
-.toggle input:checked + .toggle-track {
-  background: var(--primary);
+.toggle input:checked + .toggle-track { background: var(--primary); }
+.toggle input:checked + .toggle-track::before { transform: translateX(22px); }
+
+/* ================================================================
+   Archive Modal
+   ================================================================ */
+
+.archive-content {
+  padding: 12px 18px 22px;
+  display: grid;
+  gap: 10px;
 }
 
-.toggle input:checked + .toggle-track::before {
-  transform: translateX(22px);
+.archive-empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 32px 0;
 }
 
-/* ── באנר עדכון ───────────────────────────────────────────────── */
+.archive-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+}
+
+.archive-icon {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.archive-info {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.archive-name {
+  font-weight: 800;
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.archive-meta {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.archive-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.danger-btn-sm {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--danger);
+  font-size: 1rem;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.danger-btn-sm:active { background: #fee8e4; }
+
+/* ================================================================
+   Predictive Section
+   ================================================================ */
+
+.predictive-section {
+  margin-bottom: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.predictive-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #fffbea;
+  border-bottom: 1px solid var(--line);
+  font-weight: 800;
+  font-size: 0.92rem;
+}
+
+.predictive-toggle {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1rem;
+  padding: 4px 8px;
+}
+
+.predictive-list {
+  display: grid;
+  gap: 0;
+}
+
+.predict-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.predict-item:last-child { border-bottom: 0; }
+
+.predict-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.predict-info {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.predict-name {
+  font-weight: 800;
+  font-size: 0.92rem;
+}
+
+.predict-meta {
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+.predict-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.predict-add,
+.predict-snooze {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface-soft);
+  font-size: 1rem;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.predict-add {
+  color: var(--primary);
+  font-weight: 800;
+}
+
+.predict-add:active { background: #e6f4ec; }
+.predict-snooze:active { background: #fef3c7; }
+
+/* ── Archive FAB (in list detail) ──────────────────────────────── */
+
+.archive-fab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 52px;
+  margin-top: 16px;
+  border: 2px dashed var(--primary);
+  border-radius: var(--radius-lg);
+  background: #e6f4ec;
+  color: var(--primary-strong);
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.archive-fab:active { background: #d4edda; }
+
+/* ── Update Toast ──────────────────────────────────────────────── */
+
 .update-toast {
   position: fixed;
   top: 12px;
@@ -1426,7 +1743,7 @@ body.focus-mode .whatsapp-fab {
   white-space: nowrap;
 }
 
-.update-toast[hidden] { display: flex; }   /* stay in layout for transition */
+.update-toast[hidden] { display: flex; }
 .update-toast.visible {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
@@ -1444,11 +1761,126 @@ body.focus-mode .whatsapp-fab {
   white-space: nowrap;
 }
 
-/* Dark mode — Chapter 5 additions */
+/* ================================================================
+   Responsive
+   ================================================================ */
+
+@media (min-width: 620px) {
+  body { padding-bottom: 160px; }
+  .app-shell { padding-top: 22px; }
+  .modal-overlay { align-items: center; padding: 20px; }
+  .modal-sheet { border-radius: var(--radius-lg); }
+  .whatsapp-fab { right: calc(50% - 344px); }
+}
+
+/* ================================================================
+   Dark Mode
+   ================================================================ */
+
 @media (prefers-color-scheme: dark) {
-  .setting-row     { border-color: var(--line); }
+  :root {
+    --bg:           #111915;
+    --surface:      #1a2420;
+    --surface-soft: #1f2d28;
+    --text:         #e8f0ea;
+    --muted:        #8aad94;
+    --line:         #2a3d32;
+    --shadow:       0 16px 40px rgba(0, 0, 0, 0.45);
+  }
+
+  body {
+    background:
+      radial-gradient(circle at top right, rgba(240, 180, 41, 0.08), transparent 28rem),
+      var(--bg);
+  }
+
+  .app-header {
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  }
+
+  .icon-button {
+    background: #1f2d28;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  .product-item { background: var(--surface); }
+  .product-item.is-bought { background: #151e19; }
+  .product-item.is-priority { background: #1e2318; }
+
+  .field input,
+  .field select {
+    background: #1f2d28;
+    color: var(--text);
+    border-color: var(--line);
+  }
+
+  .priority-btn { background: #1f2d28; color: var(--muted); border-color: var(--line); }
+  .priority-btn[data-priority="1"] { background: #2a2310; border-color: var(--accent); color: #d4a030; }
+
+  .modal-sheet { background: #1a2420; }
+  .close-button { background: #1f2d28; }
+  .secondary-button { background: #1f2d28; color: var(--text); }
+
+  .category-section { background: var(--surface); border-color: var(--line); }
+  .category-header { background: var(--surface-soft); border-color: var(--line); }
+  .category-icon { background: #253429; }
+  .category-count { background: #253429; color: var(--primary); }
+
+  .price-tag { background: #1c3327; color: #5dba84; }
+  .product-item.is-bought .price-tag { background: #1e2420; color: #4a5e50; }
+
+  .undo-toast { background: #e8f0ea; color: #18211c; }
+  .undo-toast #undoBtn { background: var(--primary-strong); }
+
+  /* Ch4 dark */
+  .link-input     { background: #1a2420; color: var(--muted); }
+  .copy-btn       { background: #1f2d28; color: var(--text);  }
+  .import-textarea { background: #1f2d28; color: var(--text);  }
+  .qr-container   { background: #fff; }
+  .preview-chip   { background: #1f2d28; border-color: var(--line); }
+  .copy-btn:active { background: #1c3327; }
+
+  /* Ch5 dark */
   .toggle-track    { background: #2a3d32; }
-  .settings-content input { background: #1f2d28; color: var(--text); border-color: var(--line); }
+  .settings-page input { background: #1f2d28; color: var(--text); border-color: var(--line); }
   .update-toast    { background: #e8f0ea; color: #18211c; }
   .update-toast button { background: var(--primary-strong); color: #fff; }
+
+  /* Bottom nav dark */
+  .bottom-nav { background: #1a2420; border-color: var(--line); box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.3); }
+
+  /* List cards dark */
+  .list-card { background: var(--surface); border-color: var(--line); }
+  .list-card-icon { background: var(--surface-soft); }
+  .new-list-card { border-color: var(--line); color: var(--primary); }
+  .new-list-card:active { background: var(--surface-soft); }
+
+  /* Templates dark */
+  .template-card { background: var(--surface); border-color: var(--line); }
+  .template-card-icon { background: var(--surface-soft); }
+
+  /* Archive dark */
+  .archive-item { background: var(--surface-soft); border-color: var(--line); }
+
+  /* Predictive dark */
+  .predictive-section { background: var(--surface); border-color: var(--line); }
+  .predictive-header { background: #2a2310; border-color: var(--line); }
+  .predict-item { border-color: var(--line); }
+  .predict-add, .predict-snooze { background: var(--surface-soft); border-color: var(--line); }
+
+  /* Theme swatch dark */
+  .theme-swatch.selected { border-color: #fff; }
+
+  /* Voice btn dark */
+  .voice-btn { background: #1f2d28; border-color: var(--line); }
+
+  /* Archive fab dark */
+  .archive-fab { background: #1c3327; border-color: var(--primary); }
+
+  /* Icon picker dark */
+  .icon-btn { background: var(--surface-soft); border-color: var(--line); }
+  .icon-btn.selected { background: #1c3327; border-color: var(--primary); }
+
+  /* New list card icon dark */
+  .new-list-card-icon { background: var(--surface-soft); }
 }
